@@ -1,0 +1,32 @@
+
+                      FREQUENTLY ASKED QUESTIONS
+                     ----------------------------
+
+- Q: What is Quafios?
+  A: Quafios is a simple operating system written from scratch to help
+     people who want to learn about operating system design.
+
+- Q: Is Quafios free software?
+  A: Yes. Quafios is free and open-source. It is licensed under GNU GPL.
+
+- Q: How can this project help learners?
+  A: Learners can use Quafios as a case study during their learning process.
+     The documentation shows how Quafios is designed, written and built. The
+     source code is also very clear and readable.
+
+- Q: Does Quafios support a GUI?
+  A: Quafios is not written to be a fancy GUI OS. The target of Quafios is
+     described above. Therefore, the focus is put on necessary components,
+     like the kernel and API. However, it is planned to support a simple GUI
+     system by next releases of Quafios.
+
+- Q: Does Quafios use stuff from linux?
+  A: No. Quafios is written from scratch. Quafios is not GNU/Linux. LIKE ANY
+     OPERATING SYSTEM, Quafios has "ideas" from various systems (including
+     UNIX systems, Linux, Minix, and DOS). Quafios also has its own ideas
+     and rules, that's why it is not a UNIX-like system.
+
+- Q: Man, your English is lousy!
+  A: Yeah, I know... and I'm working on it. And by the way, this "Q:" is not
+     a question, since it doesn't end with a question mark. But anyway, since
+     I write both questions and answers... Oh boy, I am really stupid.

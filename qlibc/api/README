@@ -1,0 +1,5 @@
+Application Programming Interface
+-----------------------------------
+
+This provides an interface for C programs to use the routines
+provided by kernel.

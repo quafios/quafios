@@ -1,0 +1,97 @@
+GEN_INC_DIR=$(top_srcdir)/include
+GEN_LIB_DIR=$(top_srcdir)/lib
+
+ROOT_DIR=$(prefix)
+BOOT_DIR=$(prefix)/boot
+ETC_DIR=$(prefix)/etc
+DEV_DIR=$(prefix)/dev
+BIN_DIR=$(prefix)/bin
+USR_DIR=$(prefix)/usr
+USR_INC_DIR=$(USR_DIR)/include
+USR_LIB_DIR=$(USR_DIR)/lib
+OPT_DIR=$(prefix)/opt
+MNT_DIR=$(prefix)/mnt
+HOME_DIR=$(prefix)/home
+RUN_DIR=$(prefix)/run
+
+CFILES        = $(shell find ./       -name "*.c" 2>/dev/null)
+ALLHFILES     = $(shell find ./       -name "*.h" 2>/dev/null)
+HFILES        = $(shell find include/ -name "*.h" 2>/dev/null)
+AFILES        = $(shell find lib/     -name "*.a" 2>/dev/null)
+SFILES        = $(shell find ./       -name "*.s" 2>/dev/null)
+
+CFLAGS = -fno-stack-protector -fno-exceptions -fno-zero-initialized-in-bss \
+         -ffunction-sections -fno-builtin -Wno-pointer-to-int-cast -Werror \
+	 -nostdinc -Iinclude -I$(GEN_INC_DIR) -include config.h \
+	 -m32 -march=i686 -mtune=generic -pedantic \
+	 -Wno-implicit-function-declaration
+
+LFLAGS = -nostartfiles -nostdlib -nodefaultlibs -L$(GEN_LIB_DIR) \
+         -m32 -march=i686 -mtune=generic -pedantic
+
+REMOVE_EMPTY_DIR=@SUBDIRS=;\
+	IFS=$$'\n'; \
+	v=$$(find $(1)/ -type d | tac);\
+	for i in $$v; do rm -d $$i 2>/dev/null; done;
+
+$(GEN_INC_DIR)/$(OBJECT_NAME): $(HFILES)
+	@mkdir -p $(GEN_INC_DIR)
+	@echo "copying header files to ../include directory..."
+	@for i in $(HFILES); do \
+		$(INSTALL) -D $$i $(top_srcdir)/$$i; \
+	done;
+	@rm -f $@
+	@touch $@
+
+$(GEN_LIB_DIR)/$(OBJECT_NAME): $(AFILES)
+	@mkdir -p $(GEN_LIB_DIR)
+	@echo "copying library files to ../lib directory..."
+	@for i in $(AFILES); do \
+		$(INSTALL) -D $$i $(top_srcdir)/$$i; \
+	done;
+	@rm -f $@
+	@touch $@
+
+clean-includes:
+	@echo "removing header files from ../include directory..."
+	@for i in $(HFILES); do \
+		rm -f $(top_srcdir)/$$i; \
+	done;
+	@rm -f $(GEN_INC_DIR)/$(OBJECT_NAME)
+	- $(call REMOVE_EMPTY_DIR, $(GEN_INC_DIR))
+
+clean-libraries:
+	@echo "removing library files from ../lib directory..."
+	@for i in $(AFILES); do \
+		rm -f $(top_srcdir)/$$i; \
+	done;
+	@rm -f $(GEN_LIB_DIR)/$(OBJECT_NAME)
+	- $(call REMOVE_EMPTY_DIR, $(GEN_LIB_DIR))
+
+install-includes:
+	@mkdir -p $(USR_INC_DIR)
+	@echo "installing header files to Quafios /usr/include directory..."
+	@for i in $(HFILES); do \
+		$(INSTALL) -D $$i $(USR_DIR)/$$i; \
+	done;
+
+install-libraries:
+	@mkdir -p $(USR_LIB_DIR)
+	@echo "copying library files to Quafios /usr/lib directory..."
+	@for i in $(AFILES); do \
+		$(INSTALL) -D $$i $(USR_DIR)/$$i; \
+	done;
+
+uninstall-includes:
+	@echo "removing header files from Quafios /usr/include directory..."
+	@for i in $(HFILES); do \
+		rm -f $(USR_DIR)/$$i; \
+	done;
+	- $(call REMOVE_EMPTY_DIR, $(prefix))
+
+uninstall-libraries:
+	@echo "removing library files from Quafios /usr/lib directory..."
+	@for i in $(AFILES); do \
+		rm -f $(USR_DIR)/$$i; \
+	done;
+	- $(call REMOVE_EMPTY_DIR, $(prefix))

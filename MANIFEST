@@ -1,0 +1,26 @@
+
+File Manifest:
+================
+Listing and description of files in this directory:
+
+README          the readme file.
+MANIFEST        this file.
+AUTHORS         credits and authors of this project.
+BUGS            known bugs and instructions on reporting bugs.
+ChangeLog       a detailed changelog intended for programmers.
+configure       configure script.
+COPYING         copyright and licensing information.
+DISCLAIMER      disclaimer information.
+FAQ             frequently asked questions.
+INSTALL         installation instructions.
+NEWS            a basic changelog intended for users.
+THANKS          a list of people who contributed.
+TODO            possible future changes.
+kernel/         Quafios kernel source code.
+boot/           Quafios boot loader.
+qlibc/          Quafios standard C library.
+init/           System initialization daemon.
+coreutils/      ls, dir, mount, link...
+shell/          Quafios shell program.
+calc/           Quafios calculator.
+edit/           The text editor/viewer of Quafios.
