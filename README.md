@@ -16,21 +16,20 @@ web-site, more information can be found in "Contact Us" section in this
 file.
 
 License:
-=========
+---------
 Quafios is free software. It is licensed under GNU General Public
 License v3.0. For more details, please refer to "COPYING" file. You
 may also visit (http://www.gnu.org/philosophy/free-sw.html) to learn
 more about free software.
 
 Installation:
-==============
+--------------
 Installation guidelines can be found in the "INSTALL" file.
 
 File Manifest:
-===============
+---------------
 Refer to "MANIFEST" file.
 
 Contact Us:
-============
-Visit us at the official website of Quafios:
-   http://www.quafios.com
+------------
+Visit us at the official website of Quafios: http://www.quafios.com
