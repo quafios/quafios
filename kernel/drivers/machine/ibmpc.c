@@ -99,6 +99,7 @@ static char *vga;
 char *legacy_vga;
 static char ibuf[VGA_MAX_ROWS*VGA_MAX_COLS*2]; /*used for graphics mode text*/
 static uint32_t vga_row, vga_col;
+static uint32_t vga_row_old, vga_col_old;
 static uint32_t vga_attrib;
 uint8_t bg_attrib = 0x0F;
 
@@ -225,6 +226,12 @@ void legacy_draw_char(char chr, char attr, int x, int y) {
             }
         }
 
+    /* draw cursor if any */
+    for (j = 0; j < chr_width && x == vga_col && y == vga_row; j++) {
+        legacy_draw_pixel(chr_pos_x+j,chr_pos_y+chr_height-1, fg);
+        legacy_draw_pixel(chr_pos_x+j,chr_pos_y+chr_height-2, fg);
+    }
+
 }
 
 int32_t legacy_get_cursor(char *x, char *y) {
@@ -249,8 +256,17 @@ void legacy_update_cursor() {
     if (!vga_initialized)
         legacy_video_init();
 
-    if (vga_mode == 1)
+    if (vga_mode == 1) {
+        legacy_draw_char(ibuf[vga_row_old*160+vga_col_old*2+0],
+                         ibuf[vga_row_old*160+vga_col_old*2+1],
+                         vga_col_old, vga_row_old);
+        vga_row_old = vga_row;
+        vga_col_old = vga_col;
+        legacy_draw_char(ibuf[vga_row_old*160+vga_col_old*2+0],
+                         ibuf[vga_row_old*160+vga_col_old*2+1],
+                         vga_col_old, vga_row_old);
         return;
+    }
 
     loc = vga_row*VGA_MAX_COLS + vga_col;
 
@@ -402,12 +418,14 @@ void legacy_video_init() {
         legacy_vga = vga = ibuf;
 
         /* zeroise cursor offsets */
-        vga_row = 0;
-        vga_col = 0;
+        vga_row = vga_row_old = 0;
+        vga_col = vga_col_old = 0;
 
         /* initialize the internal text frame buffer */
-        for (i = 0; i < sizeof(ibuf); i++)
-            ibuf[i] = 0;
+        for (i = 0; i < sizeof(ibuf); i+=2) {
+            ibuf[i+0] = 0x00;
+            ibuf[i+1] = 0x0F;
+        }
 
     } else {
 
