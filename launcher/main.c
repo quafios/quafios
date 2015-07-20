@@ -36,6 +36,12 @@ void launch(int selected) {
         /* qonqueror */
         if (!fork())
             execve("/bin/qonqueror", NULL, NULL);
+    } else if (selected == 1) {
+        /* text editor */
+        if (!fork()) {
+            char *argv[] = {"/bin/qonsole", "/bin/edit", NULL};
+            execve("/bin/qonsole", argv, NULL);
+        }
     } else if (selected == 2) {
         /* qonsole */
         if (!fork())

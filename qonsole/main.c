@@ -100,6 +100,8 @@ void exec_shell(char *fname) {
     /* fork */
     if (!fork()) {
 
+        char *argv[2];
+
         /* close standard streams */
         close(0);
         close(1);
@@ -113,8 +115,12 @@ void exec_shell(char *fname) {
         open(pstty_file, 0); /* open pstty_file as stdout */
         open(pstty_file, 0); /* open pstty_file as stderr */
 
+        /* prepare argv */
+        argv[0] = fname;
+        argv[1] = NULL;
+
         /* execute the shell */
-        execve(fname, NULL, NULL);
+        execve(fname, argv, NULL);
 
     }
 
