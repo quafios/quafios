@@ -593,7 +593,7 @@ int32_t diskfs_write_fileblk(inode_t *inode,
     int32_t ptrs_per_block;
     diskfs_lvl_t lvl;
     uint8_t *tmp;
-    int32_t init = 0, i, j;
+    int32_t init = 0, i, j = 0;
     diskfs_blk_t  blk;
     diskfs_blk_t *ptr;
 
@@ -1507,7 +1507,7 @@ int32_t diskfs_write(file_t *file, void *buf, int32_t size) {
         if ((tsize = blksize-off%blksize) > rem)
             tsize = rem;
 
-        /* do the read! */
+        /* do the write! */
         if (tsize == blksize) {
             /* write the whole block! */
             diskfs_write_fileblk(file->inode, off/blksize, buf);
