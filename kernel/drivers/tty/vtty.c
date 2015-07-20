@@ -160,7 +160,7 @@ uint32_t vtty_read(device_t *dev, uint64_t off, uint32_t size, char *buff) {
                 block();
             }
         } else {
-            while(buffront == bufback);  {
+            while (buffront == bufback) {
                 /* buffer is empty. */
                 blocked_pid = curproc->pid;
                 block();
