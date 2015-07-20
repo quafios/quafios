@@ -27,23 +27,33 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 int main(int argc, char *argv[]) {
 
+    char *filename;
+
     if (argc < 2) {
-        printf("Must pass file name as argument.\n");
-        return -1;
+        filename = malloc(200);
+        filename[0] = 0;
+        while (!filename[0]) {
+            printf("Enter filename: ");
+            scanf("%s", filename);
+        }
+        getchar(); /* flush \n */
+    } else {
+        filename = argv[1];
     }
 
-    if (file_load(argv[1])) {
-        printf("can't open %s\n", argv[1]);
+    if (file_load(filename)) {
+        printf("can't open %s\n", filename);
         return -1;
     }
 
     if (!strcmp(&argv[0][strlen(argv[0])-4], "view")) {
         extern int fileModified;
         if (fileModified) {
-            printf("can't read %s\n", argv[1]);
+            printf("can't read %s\n", filename);
             return -1;
         }
         console_init();

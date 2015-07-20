@@ -127,8 +127,9 @@ void exec_shell(char *fname) {
 #define VGA_MAX_COLS    80
 #define VGA_MAX_ROWS    25
 
-char buf[80*25*2] = {0};
+char buf[80*25*2];
 static uint32_t vga_row = 0, vga_col = 0;
+static uint32_t vga_row_old = 0, vga_col_old = 0;
 static uint32_t vga_attrib = 0x0F;
 static uint32_t color_palette[] = {
      0xFF000000,
@@ -170,6 +171,12 @@ void draw_char(char chr, char attr, int x, int y) {
             else
                 pixbuf_set_pixel(win->pixbuf, chr_pos_x+j, chr_pos_y+k, bg);
 
+    /* draw cursor if any */
+    for (j = 0; j < font_width && vga_row == y && vga_col == x; j++) {
+        pixbuf_set_pixel(win->pixbuf,chr_pos_x+j,chr_pos_y+font_height-2,fg);
+        pixbuf_set_pixel(win->pixbuf,chr_pos_x+j,chr_pos_y+font_height-1,fg);
+    }
+
     /* update watchers */
     if (x1 == -1) {
         x1 = chr_pos_x;
@@ -203,6 +210,17 @@ void draw_char(char chr, char attr, int x, int y) {
 
 }
 
+void update_cursor() {
+    draw_char(buf[vga_row_old*160+vga_col_old*2+0],
+              buf[vga_row_old*160+vga_col_old*2+1],
+              vga_col_old, vga_row_old);
+    vga_row_old = vga_row;
+    vga_col_old = vga_col;
+    draw_char(buf[vga_row_old*160+vga_col_old*2+0],
+              buf[vga_row_old*160+vga_col_old*2+1],
+              vga_col_old, vga_row_old);
+}
+
 void scroll() {
     unsigned int i, j;
 
@@ -230,7 +248,15 @@ void newline() {
         scroll();
     }
 
-    /* TODO: update_cursor(); */
+    update_cursor();
+}
+
+void vga_init() {
+    int i;
+    for (i = 0; i < 160*25; i+=2) {
+        buf[i+0] = 0x00;
+        buf[i+1] = 0x0F;
+    }
 }
 
 void pstty_putc(char chr) {
@@ -255,7 +281,7 @@ void pstty_putc(char chr) {
             } else {
                 vga_col = vga_col - 1;
             }
-            /* TODO: update_cursor(); */
+            update_cursor();
             break;
 
         default:
@@ -264,7 +290,7 @@ void pstty_putc(char chr) {
 
             if (vga_col != VGA_MAX_COLS-1) {
                 vga_col = vga_col+1;
-                /* TODO: update_cursor(); */
+                update_cursor();
             } else {
                 newline();
             }
@@ -294,6 +320,7 @@ void pstty_get_cursor() {
 void pstty_set_cursor(char x, char y) {
     vga_row = y;
     vga_col = x;
+    update_cursor();
 }
 
 int k = 0;
@@ -355,7 +382,9 @@ void pstty_press(char chr) {
 
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+
+    char title[100] = "Qonsole";
 
     /* initialize the font */
     font_init();
@@ -363,13 +392,19 @@ int main() {
     /* initialize timer */
     timer_init();
 
+    /* choose title */
+    if (argv[1]) {
+        strcpy(&title[strlen(title)], " - ");
+        strcpy(&title[strlen(title)], argv[1]);
+    }
+
     /* allocate a window */
-    win = window_alloc("Qonsole", /* title */
-                       font_width*80, /* width */
-                       font_height*25, /* height */
+    win = window_alloc(title,          /* title      */
+                       font_width*80,  /* width      */
+                       font_height*25, /* height     */
                        -1,             /* x (random) */
                        -1,             /* y (random) */
-                       0xFF000000, /* bg color */
+                       0xFF000000,     /* bg color   */
                        "/usr/share/icons/qonsole16.png" /* iconfile */);
 
     /* initialize window event handlers */
@@ -378,8 +413,11 @@ int main() {
     /* initialize pstty */
     pstty_init();
 
+    /* initialize vga */
+    vga_init();
+
     /* execute the shell */
-    exec_shell("/bin/rash");
+    exec_shell(argv[1]?argv[1]:"/bin/rash");
 
     /* set receiver */
     set_receiver(pstty_event);
