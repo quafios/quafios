@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> Splash Screen.                                   | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,25 +34,23 @@ void splash() {
 
     printk("\n");
 
-#if 0
     printk("%a", 0x0B);
 
     for (i = 0; i < 80; i++)
             printk("=");
-    printk("                                 Quafios 1.0.2\n");
+    printk("                                 Quafios 2.0.1\n");
     for (i = 0; i < 80; i++)
             printk("=");
 
     printk("\n");
-#endif
 
     printk("%a", 0x0A);
-    printk("Quafios Copyright (C) 2014 Mostafa Abd El-Aziz.\n");
+    printk("Quafios Copyright (C) 2015 Mostafa Abd El-Aziz.\n");
     printk("This program comes with ABSOLUTELY NO WARRANTY; ");
-    printk("for details\ntype `view /usr/share/DISCLAIMER'.\n");
+    printk("for details\ntype `view /home/DISCLAIMER'.\n");
     printk("This is free software, ");
     printk("and you are welcome to redistribute it under certain\n");
-    printk("conditions; type `view /usr/share/COPYING' ");
+    printk("conditions; type `view /home/COPYING' ");
     printk("for details.\n");
     printk("%a", 0x0F);
 

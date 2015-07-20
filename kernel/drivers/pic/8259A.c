@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> Intel 8259A PIC Device Driver                    | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -127,7 +127,7 @@ uint32_t i8259_probe(device_t *dev, void *config) {
      * bit4: must be 1 (shows that this is ICW1).
      * bit5-7: should be zeros.
      */
-    ICW1 = 0x11 | (info->cascade > 0 ? 0 : 2);
+    ICW1 = 0x11 | (info->cascade > 0 ? 0 : 2) | 8;
     cmd(dev, ICW1);
 
     /* Initialization Command Word 2 [Data Port]:

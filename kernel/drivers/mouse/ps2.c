@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> PS/2 Mouse Device Driver.                        | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
  */
 
 #include <arch/type.h>
+#include <arch/irq.h>
 #include <lib/linkedlist.h>
 #include <sys/error.h>
 #include <sys/printk.h>
@@ -114,6 +115,8 @@ static uint8_t enable_mouse(device_t *dev) {
 
 uint32_t ps2mouse_probe(device_t *dev, void *config) {
 
+    irq_reserve_t *reserve;
+
     /* inform the user that the driver is loading */
     printk("PS/2 Mouse driver is initializing...\n");
 
@@ -125,7 +128,11 @@ uint32_t ps2mouse_probe(device_t *dev, void *config) {
     enable_mouse(dev);
 
     /* catch the IRQs: */
-    irq_reserve(dev->resources.list[0].data.irq.number, dev, 0);
+    reserve = kmalloc(sizeof(irq_reserve_t));
+    reserve->dev     = dev;
+    reserve->expires = 0;
+    reserve->data    = NULL;
+    irq_reserve(dev->resources.list[0].data.irq.number, reserve);
 
     /* done */
     return ESUCCESS;

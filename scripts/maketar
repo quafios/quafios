@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e
+rm -rf /tmp/quafios-2.0.1 /tmp/quafios-2.0.1.tar.gz
+cp -rp /home/iocoder/Projects/Quafios /tmp/quafios-2.0.1
+cd /tmp/quafios-2.0.1
+rm -rf doc
+if [ -a Makefile ]; then
+	make distclean
+fi
+rm -rf autom4te.cache/
+cd ..
+tar -zcf /tmp/quafios-2.0.1.tar.gz quafios-2.0.1/

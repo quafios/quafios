@@ -3,24 +3,38 @@ File Manifest:
 ================
 Listing and description of files in this directory:
 
-README          the readme file.
-MANIFEST        this file.
-AUTHORS         credits and authors of this project.
+AUTHORS         authors of this project.
 BUGS            known bugs and instructions on reporting bugs.
 ChangeLog       a detailed changelog intended for programmers.
 configure       configure script.
 COPYING         copyright and licensing information.
+CREDITS         credits file .
 DISCLAIMER      disclaimer information.
 FAQ             frequently asked questions.
 INSTALL         installation instructions.
+MANIFEST        this file.
 NEWS            a basic changelog intended for users.
-THANKS          a list of people who contributed.
+README          the readme file.
+THANKS          people who contributed to the project.
 TODO            possible future changes.
-kernel/         Quafios kernel source code.
 boot/           Quafios boot loader.
-qlibc/          Quafios standard C library.
-init/           System initialization daemon.
-coreutils/      ls, dir, mount, link...
-shell/          Quafios shell program.
 calc/           Quafios calculator.
+coreutils/      ls, dir, mount, link...
+cpanel/         GUI control panel.
 edit/           The text editor/viewer of Quafios.
+gui/            GUI client application library.
+init/           System initialization daemon.
+kernel/         Quafios kernel source code.
+launcher/       GUI shell.
+media/          Screenshots, icons, etc...
+pascal/         GUI program to print pascal triangle's 1000th row.
+qlibc/          Quafios standard C library.
+qonqueror/      GUI file browser.
+qonsole/        GUI terminal emulator.
+quafshot/       GUI image viewer.
+rash/           Quafios shell program.
+scripts/        Scripts used by Makefiles.
+shell/          Quafios old shell program.
+tools/          Tools used to install Quafios on various storage media.
+udev/           Quafios udev utility.
+winman/         GUI window manager.

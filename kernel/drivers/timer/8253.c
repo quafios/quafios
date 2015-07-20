@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> i8253 Timer Device Driver.                       | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 /* x86 Programmable Interval Timer */
 
 #include <arch/type.h>
+#include <arch/irq.h>
 #include <lib/linkedlist.h>
 #include <sys/error.h>
 #include <sys/printk.h>
@@ -197,10 +198,12 @@ uint32_t i8253_probe(device_t *dev, void *config) {
 
         if (info->clock[i].catch_irq) {
             /* catch irq. */
+            irq_reserve_t *reserve = kmalloc(sizeof(irq_reserve_t));
             info->clock[i].irqn = dev->resources.list[j++].data.irq.number;
-
-            /* Reserve IRQ: */
-            irq_reserve(info->clock[i].irqn, dev, 0);
+            reserve->dev     = dev;
+            reserve->expires = 0;
+            reserve->data    = NULL;
+            irq_reserve(info->clock[i].irqn, reserve);
         }
 
         if (!(info->clock[i].counter)) continue; /* ignored clock. */

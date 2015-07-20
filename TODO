@@ -1,29 +1,38 @@
 TODO list for next release:
 ----------------------------
 
-- Implement UHCI.
-- Implement EHCI.
-- Implement USB mass storage device (with plug and play)
-
-- Implement MBR support (partprobe in kernel)
-- Enable support for ext2, ntfs, fat, and/or iso9660.
+- Implement EHCI
 - tmpfs unimplemented routines (and mount /tmp and /run as tmpfs).
-
-- Implement semaphores
-- Let irqs use semaphores
+- Quafios installation on a disk.
 
 - Implement kfree() and pfree() and user memory freeing.
 
-- Don't forget to re-enable winman (in init script) and wallpapers in
-  media/Makefile.am and set ENABLE_GRAPHICS in boot/printf.c to 1.
+- solve edit/view bugs.
+- GUI text editor and turn off
 
-----------------------------------------------------
+--------------------------------------------------------------------------------
 
 The release after next:
 ------------------------
+
 - LAN
+- Audio
+
 - ATAPI
 - ATA DMA mode
 - AHCI
+
+- USB plug and play
+- OHCI
+- xHCI
+
+- ext2
+- ntfs
+- fat
+- iso9660.
+
+- hexedit
+
 - signals and pipes
-- Make the file_op struct (unify files and drivers).
+
+- Make kernel design modular (everything is a module).

@@ -6,8 +6,8 @@
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,9 +31,28 @@
 #include <sys/class.h>
 #include <api/fs.h>
 
+#define MAX_DISK        28
+
 struct {
     int devid;
-} disks[28] = {0};
+} disks[MAX_DISK] = {0};
+
+int get_free_disk() {
+    int i = 0;
+    for (i = 0; i < MAX_DISK; i++)
+        if (!disks[i].devid)
+            return i;
+    return -1;
+}
+
+int get_disk_by_devid(int devid) {
+    int i = 0;
+    for (i = 0; i < MAX_DISK; i++)
+        if (disks[i].devid == devid)
+            return i;
+    return -1;
+
+}
 
 int main() {
 
@@ -81,18 +100,33 @@ int main() {
             } else if (sub == SUB_i8042_ATKBC_PS2MOUSE) {
                 mknod("mouse", FT_SPECIAL, devid);
             }
-        } else if (bus == BUS_IDE) {
-            if (base == BASE_ATA_DISK) {
+        } else if (bus == BUS_IDE || bus == BUS_SCSI) {
+            if (bus == BUS_IDE  && base == BASE_ATA_DISK ||
+                bus == BUS_SCSI && base == BASE_SCSI_DISK) {
                 /* hard disk */
-                filename[0] = 's';
-                filename[1] = 'd';
-                filename[2] = disk_indx+++'a';
-                filename[3] = 0;
-                mknod(filename, FT_SPECIAL, devid);
-            } else if (base == BASE_ATAPI_CDROM) {
+                disk_indx = get_free_disk();
+                if (disk_indx >= 0) {
+                    filename[0] = 's';
+                    filename[1] = 'd';
+                    filename[2] = disk_indx+'a';
+                    filename[3] = 0;
+                    mknod(filename, FT_SPECIAL, devid);
+                    disks[disk_indx].devid = devid;
+                }
+            } else if (bus == BUS_IDE && base == BASE_ATAPI_CDROM) {
                 /* cdrom */
                 strcpy(filename, "sr");
                 itoa(cdrom_indx++, &filename[strlen(filename)], 10);
+                mknod(filename, FT_SPECIAL, devid);
+            }
+        } else if (bus == BUS_DISK && base == BASE_DISK_PARTITION) {
+            disk_indx = get_disk_by_devid(progif);
+            if (disk_indx >= 0) {
+                filename[0] = 's';
+                filename[1] = 'd';
+                filename[2] = disk_indx+'a';
+                filename[3] = 0;
+                itoa(sub, &filename[strlen(filename)], 10);
                 mknod(filename, FT_SPECIAL, devid);
             }
         }

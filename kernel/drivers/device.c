@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> Device Management Unit .                         | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,7 +56,12 @@ driver_t *drivers[] = {
     &vga_driver,
     &ide_driver,
     &atadisk_driver,
-    &ahci_driver
+    &ahci_driver,
+    &uhci_driver,
+    &usbhub_driver,
+    &usbmass_driver,
+    &scsidisk_driver,
+    &partition_driver
 };
 
 /* Data Structures:  */

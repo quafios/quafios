@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> ATA/ATAPI IDE Device Driver.                     | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
  */
 
 #include <arch/type.h>
+#include <arch/irq.h>
 #include <lib/linkedlist.h>
 #include <sys/error.h>
 #include <sys/printk.h>
@@ -36,6 +37,7 @@
 #include <sys/device.h>
 #include <sys/bootinfo.h>
 #include <sys/scheduler.h>
+#include <sys/semaphore.h>
 #include <pci/pci.h>
 #include <ata/ide.h>
 
@@ -71,6 +73,7 @@ typedef struct {
     uint32_t     pci_dma_reg_base; /* pci dma registers */
     uint32_t     pci_dma_reg_type; /* memory-mapped or I/O? */
     uint32_t     irqnum;           /* IRQ */
+    uint32_t     is_active;        /* channel is active */
     ata_drive_t  drives[2];        /* information about the drives */
 } channel_t;
 
@@ -84,6 +87,8 @@ typedef struct {
     device_t *master;
     /* ide info */
     channel_t channels[2];
+    /* irq semaphore */
+    semaphore_t irqsema;
 } info_t;
 
 /* ================================================================= */
@@ -209,7 +214,8 @@ static void delay_400ns(info_t *info, int channel) {
 
 static void soft_reset(info_t *info, int channel) {
     /* soft reset all drives on the bus */
-    write_reg(info, channel, ATA_REG_CTRL_ALT_STATUS, DEVCTRL_MASK_SRST);
+    write_reg(info, channel, ATA_REG_CTRL_ALT_STATUS,
+              DEVCTRL_MASK_SRST | DEVCTRL_MASK_NIEN);
     /* wait for a while */
     sleep(10);
     /* reset the bus to normal operation */
@@ -461,18 +467,10 @@ static int32_t wait_for_drq(info_t *info, uint32_t channel, uint32_t wmode) {
     int32_t err;
     uint8_t state;
     if (wmode == ATA_WMODE_IRQ) {
-        /* IRQ handling */
-        while(1) {
-            /* sleep for IRQ */
-            irq_down(info->channels[channel].irqnum);
-            /* handle irq sharing */
-            state = read_status(info, channel);
-            if ((state & STATUS_MASK_ERR) || (state & STATUS_MASK_DRQ))
-                break; /* it is our irq */
-            irq_up(info->channels[channel].irqnum);
-        }
+        /* sleep for IRQ */
+        sema_down(&info->irqsema);
         /* error occured? */
-        if (state & STATUS_MASK_ERR)
+        if (read_status(info, channel) & STATUS_MASK_ERR)
             return 2;
     } else {
         /* wait until BSY clears */
@@ -549,12 +547,13 @@ int32_t pio_data(info_t *info,
 
     int32_t err;
 
-    /* 1: select the drive and set registers: */
-    select_drive(info, channel, drvnum, seccount, lba, amode);
-
-    /* 2: enable interrupts */
+    /* 1: enable interrupts */
     if (wmode == ATA_WMODE_IRQ)
         enable_irq(info, channel);
+    info->channels[channel].is_active = 1;
+
+    /* 2: select the drive and set registers: */
+    select_drive(info, channel, drvnum, seccount, lba, amode);
 
     /* 3: send command */
     write_reg(info, channel, ATA_REG_COMMAND_STATUS, cmd);
@@ -564,6 +563,7 @@ int32_t pio_data(info_t *info,
 
     /* 5: disable interrupts */
     disable_irq(info, channel);
+    info->channels[channel].is_active = 0;
 
     /* 6: done */
     return err;
@@ -585,6 +585,7 @@ uint32_t ide_probe(device_t *dev, void *config) {
     device_t *t;
     class_t cls;
     reslist_t reslist = {0, NULL};
+    irq_reserve_t *reserve;
 
     /* create info_t structure: */
     info_t *info = (info_t *) kmalloc(sizeof(info_t));
@@ -621,11 +622,12 @@ uint32_t ide_probe(device_t *dev, void *config) {
         /* primary channel not in compatibility mode */
         info->channels[0].command_reg_base = list[1].data.mem.base;
         info->channels[0].command_reg_type = list[1].type;
-        info->channels[0].control_reg_base = list[2].data.mem.base;
+        info->channels[0].control_reg_base = list[2].data.mem.base+2;
         info->channels[0].control_reg_type = list[2].type;
         info->channels[0].pci_dma_reg_base = list[5].data.mem.base;
         info->channels[0].pci_dma_reg_type = list[5].type;
         info->channels[0].irqnum           = list[0].data.irq.number;
+        info->channels[0].is_active        = 0;
     } else {
         /* primary channel is in compatibility mode */
         info->channels[0].command_reg_base = 0x1F0;
@@ -635,7 +637,7 @@ uint32_t ide_probe(device_t *dev, void *config) {
         info->channels[0].pci_dma_reg_base = list[5].data.mem.base;
         info->channels[0].pci_dma_reg_type = list[5].type;
         info->channels[0].irqnum           = 0x0E;
-
+        info->channels[0].is_active        = 0;
     }
 
     /* detect the I/O address ranges of the secondary channel */
@@ -648,6 +650,7 @@ uint32_t ide_probe(device_t *dev, void *config) {
         info->channels[1].pci_dma_reg_base = list[5].data.mem.base+8;
         info->channels[1].pci_dma_reg_type = list[5].type;
         info->channels[1].irqnum           = list[0].data.irq.number;
+        info->channels[1].is_active        = 0;
 
     } else {
         /* secondary channel is in compatibility mode */
@@ -658,6 +661,7 @@ uint32_t ide_probe(device_t *dev, void *config) {
         info->channels[1].pci_dma_reg_base = list[5].data.mem.base+8;
         info->channels[1].pci_dma_reg_type = list[5].type;
         info->channels[1].irqnum           = 0x0F;
+        info->channels[1].is_active        = 0;
     }
 
     /* debug information */
@@ -675,8 +679,34 @@ uint32_t ide_probe(device_t *dev, void *config) {
     }
 #endif
 
+    /* register for channel 0 irqs */
+    reserve          = kmalloc(sizeof(irq_reserve_t));
+    reserve->dev     = dev;
+    reserve->expires = 0;
+    reserve->data    = NULL;
+    irq_reserve(info->channels[0].irqnum, reserve);
+
+    /* register for channel 1 irqs */
+    if (info->channels[1].irqnum != info->channels[0].irqnum) {
+        reserve          = kmalloc(sizeof(irq_reserve_t));
+        reserve->dev     = dev;
+        reserve->expires = 0;
+        reserve->data    = NULL;
+        irq_reserve(info->channels[1].irqnum, reserve);
+    }
+
+    /* initialize semaphores */
+    sema_init(&info->irqsema, 0);
+
     /* loop over channels */
     for (i = 0; i < 2; i++) {
+        /* read status */
+        if (read_status(info, i) == 0xFF) {
+            /* floating bus */
+            info->channels[i].drives[0].exists = 0;
+            info->channels[i].drives[1].exists = 0;
+            continue;
+        }
         /* software reset the bus */
         soft_reset(info, i);
         /* loop over drives attached to the bus */
@@ -691,6 +721,9 @@ uint32_t ide_probe(device_t *dev, void *config) {
             info->channels[i].drives[j].heads     = 0;
             /* select master */
             select_drive(info, i, j, 0, -1, ATA_AMODE_CHS);
+            /* floating bus? */
+            if (read_status(info, i) == 0xFF)
+                continue;
             /* send identify command */
             write_reg(info, i, ATA_REG_COMMAND_STATUS, ATA_CMD_IDENTIFY);
             /* if status is zero, drive doesn't exist */
@@ -909,5 +942,25 @@ uint32_t ide_ioctl(device_t *dev, uint32_t cmd, void *data) {
 }
 
 uint32_t ide_irq(device_t *dev, uint32_t irqn) {
+    int32_t state;
+    info_t *info = (info_t *) dev->drvreg;
+    /* check if IRQ source is channel 0 */
+    if (irqn == info->channels[0].irqnum && info->channels[0].is_active) {
+        /* this reg read flushes the IRQ */
+        state = read_status(info, 0);
+        if ((state & STATUS_MASK_ERR) || (state & STATUS_MASK_DRQ)) {
+            /* it is our irq */
+            sema_up(&info->irqsema);
+        }
+    }
+    /* check if IRQ source is channel 1 */
+    if (irqn == info->channels[1].irqnum && info->channels[1].is_active) {
+        /* this reg read flushes the IRQ */
+        state = read_status(info, 1);
+        if ((state & STATUS_MASK_ERR) || (state & STATUS_MASK_DRQ)) {
+            /* it is our irq */
+            sema_up(&info->irqsema);
+        }
+    }
     return ESUCCESS;
 }

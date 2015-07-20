@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> procman: fork() system call.                     | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ int32_t fork() {
     newproc->plist.proc = newproc;
     newproc->sched.proc = newproc;
     newproc->irqd.proc  = newproc;
+    newproc->semad.proc = newproc;
 
     /* create memory: */
     if (umem_init(&(newproc->umem))) {
@@ -118,6 +119,7 @@ int32_t fork() {
 
     /* not blocked */
     newproc->blocked = 0;
+    newproc->lock_to_unlock = NULL;
 
     /* exit status: */
     newproc->terminated = 0;

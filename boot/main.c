@@ -6,8 +6,8 @@
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,37 +32,43 @@ extern bootinfo_t *bootinfo;
 
 int main() {
 
-    /* Enter Unreal Mode: */
+    /* enter unreal mode */
     enter_unreal();
 
-    /* Print splash: */
+    /* print splash */
     printf("\nQuafios boot loader is starting...\n");
 
-    /* Enable A20 Line: */
+    /* show menu */
+    show_menu();
+
+    /* clear screen */
+    cls();
+
+    /* enable A20 Line */
     enable_a20();
 
-    /* Initialize bootinfo: */
+    /* initialize bootinfo */
     bootinfo_init();
 
-    /* Decompress the ram disk: */
+    /* decompress the ram disk */
     gunzip("RAMDISK.GZ");
 
-    /* Load kernel to memory: */
+    /* load kernel to memory */
     diskfs_load("/boot/kernel.bin", bootinfo->res[BI_KERNEL].base);
 
     /* set VGA resolution */
     set_resolution();
 
-    /* Enter protected mode & execute kernel.bin: */
+    /* enter protected mode & execute kernel.bin */
     go_protected(bootinfo->res[BI_KERNEL].base);
 
-    /* Set video mode 0x03: */
+    /* set video mode 0x03: */
     video_mode(0x03);
 
-    /* Kernel returned (this should never happen): */
+    /* kernel returned (this should never happen) */
     printf("Quafios kernel main() returned!\n");
 
-    /* Done: */
+    /* done */
     return 0;
 
 }

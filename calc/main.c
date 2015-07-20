@@ -6,8 +6,8 @@
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ char buffer[BUFFER_SIZE];
 
 int main() {
 
-    printf("Quafios Calculator 1.0.2\n");
+    printf("Quafios Calculator 2.0.1\n");
     printf("This software is free open source. For license details\n");
     printf("type: \"license\". Type \"quit\" to exit or");
     printf(" \"help\" for help.\n\n");

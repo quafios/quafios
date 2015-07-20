@@ -2,12 +2,11 @@ include $(top_srcdir)/generic.am
 
 OBJECT_NAME   = loader
 OBJECT_PREFIX = $(BOOT_DIR)
-LDSCRIPT      = loader.ld
+LDSCRIPT      = $(CSD)/loader.ld
 LFLAGS       += -Wl,--oformat=binary -Wl,-T$(LDSCRIPT)
 LIBS          =
-OBJ           = $(shell echo $(CFILES) | sed 's/\.c/\.o/g')
 DEPS          = $(ALLHFILES) Makefile \
-		$(GEN_INC_DIR)/kernel
+		$(KERNEL_INCLUDE)
 
 cdboot.o: cdboot.s Makefile
 	$(AS) --32 $< -o $@
@@ -18,8 +17,8 @@ cdboot: cdboot.o
 realtest.o: realtest.s Makefile
 	$(AS) --32 $< -o $@
 
-realtest: realtest.o realtest.ld
-	$(LD) -m elf_i386 -Trealtest.ld $< -o $@
+realtest: realtest.o $(CSD)/realtest.ld
+	$(LD) -m elf_i386 -T$(CSD)/realtest.ld $< -o $@
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<

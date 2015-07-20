@@ -6,8 +6,8 @@
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,6 +43,8 @@ uint32_t rem = 0;
 
 uint8_t  *out;
 int32_t  outp = 0;   /* out pointer. */
+
+uint8_t print_counter = 0;
 
 void streamInit(char *file) {
 
@@ -86,7 +88,11 @@ uint8_t getNextBit() {
     if (inp == 2048) {
         inp = 0;
         cdread(sector++, in);
-        printf(".");
+        print_counter++;
+        if (print_counter == 20) {
+            print_counter = 0;
+            printf(".");
+        }
         /*while(1); */
     }
 

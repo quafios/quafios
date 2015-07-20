@@ -3,13 +3,12 @@ include $(top_srcdir)/generic.am
 OBJECT_NAME   = quafshot
 OBJECT_PREFIX = $(BIN_DIR)
 LIBS          = -lgui -lc -lgcc
-OBJ           = $(shell echo $(CFILES) | sed 's/\.c/\.o/g')
 DEPS          = $(ALLHFILES) Makefile \
-                $(GEN_INC_DIR)/kernel \
-		$(GEN_INC_DIR)/libc \
-		$(GEN_LIB_DIR)/libc \
-		$(GEN_INC_DIR)/libgui \
-		$(GEN_LIB_DIR)/libgui
+                $(KERNEL_INCLUDE) \
+		$(LIBC_INCLUDE) \
+		$(LIBC_LIB) \
+		$(LIBGUI_INCLUDE) \
+		$(LIBGUI_LIB)
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<

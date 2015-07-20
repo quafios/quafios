@@ -1,8 +1,8 @@
 
-AC_INIT([Quafios],[1.0.2],[],[quafios],[http://www.quafios.com/])
+AC_INIT([Quafios],[2.0.1],[],[quafios],[http://www.quafios.com/])
 
 PACKAGE=Quafios
-VERSION=1.0.2
+VERSION=2.0.1
 
 AC_PROG_CXX
 
@@ -27,5 +27,5 @@ AC_CONFIG_FILES(Makefile
                 quafshot/Makefile
                 launcher/Makefile
                 pascal/Makefile
-                format/Makefile)
+                tools/Makefile)
 AC_OUTPUT

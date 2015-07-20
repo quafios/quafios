@@ -76,7 +76,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 DIST_COMMON = $(top_srcdir)/generic.am $(srcdir)/Makefile.in \
-	$(srcdir)/Makefile.am README
+	$(srcdir)/Makefile.am
 subdir = edit
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -190,8 +190,9 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-GEN_INC_DIR = $(top_srcdir)/include
-GEN_LIB_DIR = $(top_srcdir)/lib
+TSD = $(shell realpath $(top_srcdir))
+CSD = $(shell realpath $(top_srcdir)/$(subdir))
+TBD = $(shell realpath $(top_builddir))
 ROOT_DIR = $(prefix)
 BOOT_DIR = $(prefix)/boot
 ETC_DIR = $(prefix)/etc
@@ -204,19 +205,33 @@ OPT_DIR = $(prefix)/opt
 MNT_DIR = $(prefix)/mnt
 HOME_DIR = $(prefix)/home
 RUN_DIR = $(prefix)/run
-CFILES = $(shell find ./       -name "*.c" 2>/dev/null)
-ALLHFILES = $(shell find ./       -name "*.h" 2>/dev/null)
-HFILES = $(shell find include/ -name "*.h" 2>/dev/null)
-AFILES = $(shell find lib/     -name "*.a" 2>/dev/null)
-SFILES = $(shell find ./       -name "*.s" 2>/dev/null)
+OBJ = $(shell cd $(CSD) && find ./ -name "*.c" 2>/dev/null | sed 's/\.c/\.o/g')
+SDIRS = $(shell cd $(CSD) && find . -type d 2>/dev/null)
+CFILES = $(shell find $(CSD)/         -name "*.c" 2>/dev/null)
+ALLHFILES = $(shell find $(CSD)/         -name "*.h" 2>/dev/null)
+HFILES = $(shell find $(CSD)/include/ -name "*.h" 2>/dev/null)
+AFILES = $(shell find $(CSD)/lib/     -name "*.a" 2>/dev/null)
+SFILES = $(shell find $(CSD)/         -name "*.s" 2>/dev/null)
+KERNEL_INCLUDE = $(shell find $(TSD)/kernel/include -name "*.h" 2>/dev/null)
+QLIBC_INCLUDE = $(shell find $(TSD)/qlibc/include  -name "*.h" 2>/dev/null)
+LIBGUI_INCLUDE = $(shell find $(TSD)/gui/include    -name "*.h" 2>/dev/null)
+QLIBC_LIB = $(shell find $(TBD)/qlibc/lib      -name "*.a" 2>/dev/null)
+LIBGUI_LIB = $(shell find $(TBD)/gui/lib        -name "*.a" 2>/dev/null)
 CFLAGS = -fno-stack-protector -fno-exceptions -fno-zero-initialized-in-bss \
          -ffunction-sections -fno-builtin -Wno-pointer-to-int-cast -Werror \
-	 -nostdinc -Iinclude -I$(GEN_INC_DIR) -include config.h \
-	 -m32 -march=i686 -mtune=generic -pedantic \
-	 -Wno-implicit-function-declaration
+	 -nostdinc -m32 -march=i686 -mtune=generic -pedantic \
+	 -Wno-implicit-function-declaration -std=c89 \
+	 -Xassembler -I$(CSD) \
+	 -Iinclude \
+	 -include $(CSD)/config.h \
+	 -I$(TSD)/kernel/include \
+	 -I$(TSD)/qlibc/include \
+	 -I$(TSD)/gui/include
 
-LFLAGS = -nostartfiles -nostdlib -nodefaultlibs -L$(GEN_LIB_DIR) \
-         -m32 -march=i686 -mtune=generic -pedantic
+LFLAGS = -nostartfiles -nostdlib -nodefaultlibs \
+         -m32 -march=i686 -mtune=generic -pedantic \
+	 -L$(TBD)/qlibc/lib \
+	 -L$(TBD)/gui/lib
 
 REMOVE_EMPTY_DIR = @SUBDIRS=;\
 	IFS=$$'\n'; \
@@ -225,11 +240,10 @@ REMOVE_EMPTY_DIR = @SUBDIRS=;\
 
 OBJECT_NAME = edit
 OBJECT_PREFIX = $(BIN_DIR)
-OBJ = $(shell echo $(CFILES) | sed 's/\.c/\.o/g')
 DEPS = $(ALLHFILES) Makefile \
-                $(GEN_INC_DIR)/kernel \
-		$(GEN_INC_DIR)/libc \
-		$(GEN_LIB_DIR)/libc
+                $(KERNEL_INCLUDE) \
+		$(LIBC_INCLUDE) \
+		$(LIBC_LIB)
 
 all: all-am
 
@@ -417,67 +431,16 @@ uninstall-am: uninstall-local
 	uninstall uninstall-am uninstall-local
 
 
-$(GEN_INC_DIR)/$(OBJECT_NAME): $(HFILES)
-	@mkdir -p $(GEN_INC_DIR)
-	@echo "copying header files to ../include directory..."
-	@for i in $(HFILES); do \
-		$(INSTALL) -D $$i $(top_srcdir)/$$i; \
-	done;
-	@rm -f $@
-	@touch $@
-
-$(GEN_LIB_DIR)/$(OBJECT_NAME): $(AFILES)
-	@mkdir -p $(GEN_LIB_DIR)
-	@echo "copying library files to ../lib directory..."
-	@for i in $(AFILES); do \
-		$(INSTALL) -D $$i $(top_srcdir)/$$i; \
-	done;
-	@rm -f $@
-	@touch $@
-
-clean-includes:
-	@echo "removing header files from ../include directory..."
-	@for i in $(HFILES); do \
-		rm -f $(top_srcdir)/$$i; \
-	done;
-	@rm -f $(GEN_INC_DIR)/$(OBJECT_NAME)
-	- $(call REMOVE_EMPTY_DIR, $(GEN_INC_DIR))
-
-clean-libraries:
-	@echo "removing library files from ../lib directory..."
-	@for i in $(AFILES); do \
-		rm -f $(top_srcdir)/$$i; \
-	done;
-	@rm -f $(GEN_LIB_DIR)/$(OBJECT_NAME)
-	- $(call REMOVE_EMPTY_DIR, $(GEN_LIB_DIR))
+make-dirs: $(SDIRS)
+	@for i in $(SDIRS); do mkdir -p $$i; done
 
 install-includes:
-	@mkdir -p $(USR_INC_DIR)
-	@echo "installing header files to Quafios /usr/include directory..."
-	@for i in $(HFILES); do \
-		$(INSTALL) -D $$i $(USR_DIR)/$$i; \
-	done;
 
 install-libraries:
-	@mkdir -p $(USR_LIB_DIR)
-	@echo "copying library files to Quafios /usr/lib directory..."
-	@for i in $(AFILES); do \
-		$(INSTALL) -D $$i $(USR_DIR)/$$i; \
-	done;
 
 uninstall-includes:
-	@echo "removing header files from Quafios /usr/include directory..."
-	@for i in $(HFILES); do \
-		rm -f $(USR_DIR)/$$i; \
-	done;
-	- $(call REMOVE_EMPTY_DIR, $(prefix))
 
 uninstall-libraries:
-	@echo "removing library files from Quafios /usr/lib directory..."
-	@for i in $(AFILES); do \
-		rm -f $(USR_DIR)/$$i; \
-	done;
-	- $(call REMOVE_EMPTY_DIR, $(prefix))
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<

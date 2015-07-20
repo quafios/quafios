@@ -6,8 +6,8 @@
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@
 
 int main(int argc, char *argv[], char *envp[]) {
 
-    char filename[512] = "/dev/sda";
     int fd;
     char buf[512];
     int i;
@@ -43,11 +42,8 @@ int main(int argc, char *argv[], char *envp[]) {
         return -1;
     }
 
-    /* make device file */
-    mknod(filename, FT_SPECIAL, atoi(argv[1]));
-
     /* open file */
-    fd = open(filename, 0);
+    fd = open(argv[1], 0);
 
     /* seek to sector */
     seek(fd, atoi(argv[2])*512, SEEK_CUR);

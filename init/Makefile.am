@@ -3,14 +3,13 @@ include $(top_srcdir)/generic.am
 OBJECT_NAME   = init
 OBJECT_PREFIX = $(BIN_DIR)
 LIBS          = -lc -lgcc
-OBJ           = $(shell echo $(CFILES) | sed 's/\.c/\.o/g')
 DEPS          = $(ALLHFILES) Makefile \
                 $(GEN_INC_DIR)/kernel \
 		$(GEN_INC_DIR)/libc \
 		$(GEN_LIB_DIR)/libc
 
 install-exec-local:
-	$(INSTALL) -D $(OBJECT_NAME) $(OBJECT_PREFIX)/$(OBJECT_NAME)
+	$(INSTALL) -D $(CSD)/$(OBJECT_NAME) $(OBJECT_PREFIX)/$(OBJECT_NAME)
 
 uninstall-local:
 	rm -f $(OBJECT_PREFIX)/$(OBJECT_NAME)

@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> Process management header.                       | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #ifndef PROC_H
 #define PROC_H
 
+#include <arch/spinlock.h>
 #include <lib/linkedlist.h>
 #include <sys/mm.h>
 #include <sys/fs.h>
@@ -60,6 +61,7 @@ typedef struct proc_s {
     pd_t plist; /* Process descriptor used by process linked list. */
     pd_t sched; /* Process descriptor used by scheduler queues.    */
     pd_t irqd;  /* Process descriptor used by IRQ queues.          */
+    pd_t semad; /* Process descriptor used by semaphores           */
 
     /* Process ID: */
     int32_t pid;
@@ -97,6 +99,7 @@ typedef struct proc_s {
 
     /* blocked? */
     int32_t blocked;
+    spinlock_t *lock_to_unlock;
 
     /* exit status: */
     int32_t terminated;

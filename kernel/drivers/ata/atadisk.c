@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> ATA Hard Disk Drive Device Driver.               | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ static class_t classes[] = {
 driver_t atadisk_driver = {
     /* cls_count: */ sizeof(classes)/sizeof(class_t),
     /* cls:       */ classes,
-    /* alias:     */ "disk",
+    /* alias:     */ "atadisk",
     /* probe:     */ atadisk_probe,
     /* read:      */ atadisk_read,
     /* write:     */ atadisk_write,
@@ -72,13 +72,13 @@ typedef struct {
 } info_t;
 
 /* ================================================================= */
-/*                        Read Sectors Command                       */
+/*                            ATA Interface                          */
 /* ================================================================= */
 
-int32_t read_sectors(info_t *info,
-                     uint32_t seccount,
-                     uint64_t lba,
-                     char *buf) {
+static int32_t read_sectors(info_t *info,
+                            uint32_t seccount,
+                            uint64_t lba,
+                            char *buf) {
     ata_req_t req;
     req.protocol  = ATA_PROTO_PIO;
     req.channel   = info->drive->channel;
@@ -93,14 +93,15 @@ int32_t read_sectors(info_t *info,
     req.drqsize   = 512;
     req.direction = ATA_DIR_READ;
     req.wmode     = ATA_WMODE_IRQ;
-    return dev_ioctl(info->dev->parent_bus->ctl, 0, &req);
+    dev_ioctl(info->dev->parent_bus->ctl, 0, &req);
+    return 0;
 }
 
-int32_t read_sector_part(info_t *info,
-                         uint64_t lba,
-                         uint32_t off,
-                         uint32_t size,
-                         char *buf) {
+static int32_t read_sector_part(info_t *info,
+                                uint64_t lba,
+                                uint32_t off,
+                                uint32_t size,
+                                char *buf) {
     int32_t err, i;
     while(info->cache_lock);
     info->cache_lock = 1;
@@ -127,7 +128,7 @@ uint32_t atadisk_probe(device_t *dev, void *drive_ptr) {
         return ENOMEM; /* i am sorry :D */
 
     /* splash */
-    printk("ATA DISK DRIVER (%d)\n", dev->devid);
+    printk("- ATA DISK DRIVER (%d)\n", dev->devid);
 
     /* store drive pointer in info structure */
     info->drive = drive_ptr;
@@ -138,6 +139,9 @@ uint32_t atadisk_probe(device_t *dev, void *drive_ptr) {
     /* initialize buffer */
     info->cache_lock = 0;
     info->cache_sect = -1;
+
+    /* scan for partitions */
+    partprobe(dev);
 
     /* done */
     return ESUCCESS;

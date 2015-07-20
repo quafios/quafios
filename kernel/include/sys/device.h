@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> Device management header.                        | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,6 +71,11 @@ extern driver_t vga_driver;
 extern driver_t ide_driver;
 extern driver_t atadisk_driver;
 extern driver_t ahci_driver;
+extern driver_t uhci_driver;
+extern driver_t usbhub_driver;
+extern driver_t usbmass_driver;
+extern driver_t scsidisk_driver;
+extern driver_t partition_driver;
 extern driver_t *drivers[];
 #define DRIVER_COUNT    (sizeof(drivers)/sizeof(driver_t*))
 

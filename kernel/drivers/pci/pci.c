@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> PCI Bus Device Driver                            | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -172,6 +172,8 @@ uint32_t add_function(device_t *dev, uint8_t bus, uint8_t devno, uint8_t func) {
     /* debugging information */
 #if 0
     printk("BUS: %d, DEV: %d, FUNC: %d, ", bus, devno, func);
+    printk("INTP: %x, ", read_conf8(dev, bus, devno, func, 0x3D));
+    printk("INTL: %x, ", read_conf8(dev, bus, devno, func, 0x3C));
     printk("Type: %x\n", read_conf32(dev, bus, devno, func, 0x08));
 #endif
 

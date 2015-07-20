@@ -24,7 +24,7 @@
    $ make isolive
 
 
-4- Now you can burn the generated "quafios-1.0.2.iso" file in the top
+4- Now you can burn the generated "quafios-2.0.1.iso" file in the top
    directory on a blank CD-ROM or just use an emulator (like qemu).
 
 - Cleaning up build files:

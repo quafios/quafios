@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> i386: process operations.                        | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,14 +56,15 @@ void copy_context(proc_t *child) {
     /* store the context of current process into child.
      * used by: fork().
      */
-    Regs *regs = (Regs *) child->kstack;
-    *regs = *((Regs *) curproc->context);
-    child->context = (void *) regs;
-    child->reg1 = (uint32_t) regs;
-    child->reg2 = (uint32_t) regs;
-    regs->esp = (uint32_t) &(regs->err);
-    regs->eax = 0; /* 0 should be returned to the child. */
-    return;
+    if (!is_in_synctest()) {
+        Regs *regs = (Regs *) child->kstack;
+        *regs = *((Regs *) curproc->context);
+        child->context = (void *) regs;
+        child->reg1 = (uint32_t) regs;
+        child->reg2 = (uint32_t) regs;
+        regs->esp = (uint32_t) &(regs->err);
+        regs->eax = 0; /* 0 should be returned to the child. */
+    }
 }
 
 void arch_proc_switch(proc_t *oldproc, proc_t *newproc) {
@@ -90,19 +91,69 @@ void arch_proc_switch(proc_t *oldproc, proc_t *newproc) {
     }
 
     /* special case: a process that has just forked: */
-    newproc->after_fork = 0;
+    if (!is_in_synctest()) {
+        /* clear after fork flag */
+        newproc->after_fork = 0;
 
-    /* Send End of Interrupt Command (very tricky): */
-    end_irq0();
+        /* get the context of the new process */
+        __asm__("mov %%eax, %%esp"::"a"(newproc->reg2));
 
-    /* get the context of the new process */
-    __asm__("mov %%eax, %%esp"::"a"(newproc->reg2));
+        /* Clear interrupt flag temporarily. */
+        cli();
 
-    /* Clear interrupt flag temporarily. */
+        /* return */
+        restore_reg();
+        __asm__("add $4, %esp");
+        iret();
+    } else {
+        /* clear after fork flag */
+        newproc->after_fork = 0;
+
+        /* get the context of the new process */
+        __asm__("mov %%eax, %%esp"::"a"(&newproc->kstack[KERNEL_STACK_SIZE]));
+
+        /* set interrupts */
+        sti();
+
+        /* call main function */
+        __asm__("call synctest_main");
+    }
+}
+
+void arch_yield() {
+
+    /* store eflags */
+    int32_t eflags = get_eflags();
+
+    /* disable interrupts */
     cli();
 
-    /* return */
-    restore_reg();
-    __asm__("add $4, %esp");
-    iret();
+    /* store regs */
+    __asm__("pusha");
+
+    /* run scheduler */
+    scheduler();
+
+    /* restore regs */
+    __asm__("popa");
+
+    /* restore eflags */
+    set_eflags(eflags);
+
+}
+
+int32_t arch_get_int_status() {
+    return get_eflags();
+}
+
+void arch_set_int_status(int32_t status) {
+    set_eflags(status);
+}
+
+void arch_disable_interrupts() {
+    cli();
+}
+
+void arch_enable_interrupts() {
+    sti();
 }

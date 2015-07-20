@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> Semaphore header.                                | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,6 +28,21 @@
 
 #ifndef SEMAPHORE_H
 #define SEMAPHORE_H
+
+#include <arch/type.h>
+#include <arch/spinlock.h>
+#include <sys/proc.h>
+
+typedef struct semaphore {
+    spinlock_t spinlock;
+    int32_t counter;
+    pd_t *head;
+    pd_t *tail;
+} semaphore_t;
+
+void sema_init(semaphore_t *sema, int32_t counter);
+void sema_down(semaphore_t *sema);
+void sema_up(semaphore_t *sema);
 
 #endif
 

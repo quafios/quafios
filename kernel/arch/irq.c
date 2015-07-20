@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> i386: ISR - IRQ handler.                         | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,20 +27,24 @@
  */
 
 #include <arch/type.h>
+#include <arch/irq.h>
 #include <sys/error.h>
 #include <sys/mm.h>
 #include <sys/device.h>
 #include <sys/scheduler.h>
+#include <sys/semaphore.h>
 #include <pic/8259A.h>
 
 #include <i386/asm.h>
 #include <i386/protect.h>
 #include <i386/stack.h>
 #include <i386/page.h>
+#include <i386/spinlock.h>
 
 #define irq(irq_num)                                    \
             __asm__("pushl $0");                        \
             store_reg();                                \
+            __asm__("sti");                             \
             __asm__("push %%eax"::"a"(irq_num));        \
             __asm__("call *%%eax"::"a"(irq_handler));   \
             __asm__("popl %eax");                       \
@@ -51,19 +55,14 @@
 #define IRQ_COUNT 0x10
 
 typedef struct {
-    uint32_t usable;      /* can be used?              */
-    device_t *pic_device; /* Reservation Queue.        */
-    linkedlist requeue;   /* reservation queue (FCFS). */
-    int      fired;
+    uint32_t    usable;      /* can be used?              */
+    device_t   *pic_device;  /* Reservation Queue.        */
+    linkedlist  requeue;     /* reservation queue (FCFS). */
 } irq_t;
 
-typedef struct {
-    void*     next;    /* next request.        */
-    device_t* dev;     /* the request sender.  */
-    uint32_t  expires; /* expires early?       */
-} reserve_t;           /* reservation request. */
-
 irq_t irq[IRQ_COUNT] = {0};
+
+semaphore_t irqsema;
 
 int32_t irq_setup(uint32_t n, device_t *pic_device) {
 
@@ -71,79 +70,82 @@ int32_t irq_setup(uint32_t n, device_t *pic_device) {
         return ENOENT;
 
     /* setup an IRQ entry: */
+    sema_down(&irqsema);
     irq[n].pic_device = pic_device;
     irq[n].usable     = 1;
+    sema_up(&irqsema);
 
     /* return: */
     return ESUCCESS;
 }
 
-uint32_t irq_reserve(uint32_t n, device_t *reserver, uint32_t expires) {
+uint32_t irq_reserve(uint32_t n, irq_reserve_t *reserve) {
 
-    reserve_t *request;
+    int32_t status;
 
     if (n >= IRQ_COUNT || !irq[n].usable)
         return ENOENT;
 
-    request = (reserve_t *) kmalloc(sizeof(reserve_t));
-    if (request == NULL) return ENOMEM;
-
-    /* initialize the request: */
-    request->dev = reserver;
-    request->expires = expires;
+    /* enter critical region */
+    status = arch_get_int_status();
+    arch_disable_interrupts();
+    sema_down(&irqsema);
 
     /* add the request to the tail of the queue: */
-    linkedlist_addlast(&(irq[n].requeue), request);
+    linkedlist_addlast(&(irq[n].requeue), reserve);
+
+    /* exit critical region */
+    sema_up(&irqsema);
+    arch_set_int_status(status);
 
     /* done. */
     return ESUCCESS;
+
 }
 
 void irq_handler(uint32_t n) {
 
-    if (n >= IRQ_COUNT || !irq[n].usable) return; /* nothing to do here. */
+    int32_t status;
+
+    if (n >= IRQ_COUNT || !irq[n].usable)
+        return; /* nothing to do here. */
+
+    /* enter critical region */
+    status = arch_get_int_status();
+    arch_disable_interrupts();
+    sema_down(&irqsema);
 
     if (irq[n].requeue.count) {
         /* The IRQ is to be served (apply FIRST COME FIRST SERVED). */
-        reserve_t *req   = (reserve_t *) irq[n].requeue.first;
-        device_t *dev    = req->dev;
-        uint32_t expires = req->expires;
+        irq_reserve_t *req     = (irq_reserve_t *) irq[n].requeue.first;
+        device_t      *dev     = req->dev;
+        uint32_t       expires = req->expires;
+        void          *data    = req->data;
         if (expires) {
             /* delete the request from the queue */
             linkedlist_aremove(&(irq[n].requeue), (linknode *) req);
-            kfree(req);
         }
         /* now serve it! */
-        dev_irq(dev, n);
+        dev_irq(dev, n, data);
     }
 
-    /* scheduler? */
-    if (n == scheduler_irq)
-        scheduler();
-
-    /* increase fired */
-    irq[n].fired++;
+    /* exit critical region */
+    sema_up(&irqsema);
+    arch_set_int_status(status);
 
     /* Send End of Interrupt Command: */
     dev_ioctl(irq[n].pic_device, PIC_CMD_EOI, NULL);
 
-}
+    /* call scheduler? */
+    if (n == scheduler_irq) {
+        ticks++;
+        scheduler();
+    }
 
-void end_irq0() {
-    dev_ioctl(irq[0].pic_device, PIC_CMD_EOI, NULL);
 }
 
 int32_t irq_to_vector(uint32_t n) {
     return n + 0x20;
-}
-
-void irq_down(uint32_t n) {
-    while (!irq[n].fired);
-    irq[n].fired--;
-}
-
-void irq_up(uint32_t n) {
-    irq[n].fired++;
 }
 
 void enable_irq_system() {
@@ -202,5 +204,7 @@ void irq_init() {
         idt[i+0x20].offset_hi = offset[i]>>16;
         linkedlist_init(&(irq[i].requeue));
     }
+
+    sema_init(&irqsema, 1);
 
 }

@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> PS/2 Keyboard Device Driver.                     | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 /* currently, only old XT keyboard scancode set is supported. */
 
 #include <arch/type.h>
+#include <arch/irq.h>
 #include <lib/linkedlist.h>
 #include <sys/error.h>
 #include <sys/printk.h>
@@ -416,6 +417,8 @@ static void handle(info_t *info, uint8_t scancode) {
 
 uint32_t ps2kbd_probe(device_t *dev, void *config) {
 
+    irq_reserve_t *reserve;
+
     /* Allocate info_t: */
     info_t *info = (info_t *) kmalloc(sizeof(info_t));
     dev->drvreg = (uint32_t) info;
@@ -440,7 +443,11 @@ uint32_t ps2kbd_probe(device_t *dev, void *config) {
      */
 
     /* catch the IRQs: */
-    irq_reserve(dev->resources.list[0].data.irq.number, dev, 0);
+    reserve = kmalloc(sizeof(irq_reserve_t));
+    reserve->dev     = dev;
+    reserve->expires = 0;
+    reserve->data    = NULL;
+    irq_reserve(dev->resources.list[0].data.irq.number, reserve);
 
     /* make sure le buffer is clear (v. important): */
     read_scancode(info);
@@ -477,6 +484,7 @@ uint32_t ps2kbd_ioctl(device_t *dev, uint32_t cmd, void *data) {
 }
 
 uint32_t ps2kbd_irq(device_t *dev, uint32_t irqn) {
+
     /* get info_t: */
     info_t *info = (info_t *) dev->drvreg;
     if (info == NULL)

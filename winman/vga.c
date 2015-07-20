@@ -6,8 +6,8 @@
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,9 @@
 
 /* VGA file descriptor */
 int vga_fd;
+
+/* VGA mode */
+unsigned int vga_mode;
 
 /* VGA parameters */
 unsigned int vga_width;
@@ -71,6 +74,13 @@ void vga_init() {
 
     /* open the vga driver */
     vga_fd = open("/dev/vga", 0);
+
+    /* get VGA mode */
+    ioctl(vga_fd, VGA_GET_MODE,  &vga_mode);
+
+    /* if text mode, exit winman */
+    if (!vga_mode)
+        exit(0);
 
     /* get vga parameters */
     ioctl(vga_fd, VGA_GET_WIDTH,  &vga_width);

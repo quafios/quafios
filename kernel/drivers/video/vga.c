@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> IBM-compatible VGA device driver.                | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -103,6 +103,7 @@ driver_t vga_driver = {
 #define VGA_INPUT_STATUS1       0x3DA
 #define VGA_FEATURE_WRITE       0x3DA
 
+uint32_t vga_mode;
 uint32_t vga_width;
 uint32_t vga_height;
 uint32_t vga_depth;
@@ -594,8 +595,11 @@ uint32_t vga_probe(device_t *dev, void *config) {
     /* inform the user that VGA is being initialized. */
     printk("VGA Device Driver is loading...\n");
 
+    /* get vga mode from bootinfo structure */
+    vga_mode = bootinfo->vga_mode;
+
     /* do nothing if graphics is disabled */
-    if (bootinfo->vga_mode == 0)
+    if (vga_mode == 0)
         return ESUCCESS;
 
     /* If no vesa graphics mode is already applied, apply
@@ -645,6 +649,9 @@ uint32_t vga_write(device_t *dev, uint64_t off, uint32_t size, char *buff) {
 
 uint32_t vga_ioctl(device_t *dev, uint32_t cmd, void *data) {
     switch (cmd) {
+        case VGA_GET_MODE:
+            *((uint32_t *) data) = vga_mode;
+            break;
         case VGA_GET_WIDTH:
             *((uint32_t *) data) = vga_width;
             break;

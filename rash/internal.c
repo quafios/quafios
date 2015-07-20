@@ -65,7 +65,7 @@ void version(char *argv[]) {
         fprintf(stderr, "Error: Invalid arguments.\n");
         fprintf(stderr, "Usage: %s\n", argv[0]);
     } else {
-        printf("rash 1.0\n");
+        printf("rash 2.0.1\n");
     }
 
 }

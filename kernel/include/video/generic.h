@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> Generic video headers.                           | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,11 +67,12 @@
 #define VGA_BG_WHITE            0xF0
 
 /* vga commands: */
-#define VGA_GET_WIDTH           0x00
-#define VGA_GET_HEIGHT          0x01
-#define VGA_GET_DEPTH           0x02
-#define VGA_GET_SCANLINE        0x03
-#define VGA_PLOT                0x04
+#define VGA_GET_MODE            0x00
+#define VGA_GET_WIDTH           0x01
+#define VGA_GET_HEIGHT          0x02
+#define VGA_GET_DEPTH           0x03
+#define VGA_GET_SCANLINE        0x04
+#define VGA_PLOT                0x05
 
 typedef struct {
 

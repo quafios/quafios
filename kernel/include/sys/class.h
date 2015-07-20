@@ -1,13 +1,13 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 1.0.2.                               | |
+ *        | |  Quafios Kernel 2.0.1.                               | |
  *        | |  -> Device classification system.                    | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,8 @@
 #define BUS_SCSI                        0x08
 #define BUS_PCMCIA                      0x09
 #define BUS_CARDBUS                     0x0A
+#define BUS_USB                         0x0B
+#define BUS_DISK                        0x0C
 #define BUS_UNDEFINED                   0xFF
 
 /* ============================================================== */
@@ -218,6 +220,35 @@
 
 #define BASE_ATAPI_CDROM                0x0001
 #define  SUB_ATAPI_CDROM_GENERIC        0x0000
+
+/* ============================================================== */
+/*                        SCSI Bus Codes                          */
+/* ============================================================== */
+
+#define BASE_SCSI_DISK                  0x0000
+#define  SUB_SCSI_DISK_GENERIC          0x0000
+
+/* ============================================================== */
+/*                        USB Bus Codes                           */
+/* ============================================================== */
+
+#define BASE_USB_MASS_STORAGE           0x08
+#define  SUB_USB_MASS_STORAGE_SCSI      0x06
+
+#define BASE_USB_HUB                    0x09
+#define  SUB_USB_HUB                    0x00
+#define   IF_USB_HUB_ROOTHUB            0x00
+#define   IF_USB_HUB_FULLSPEED          0x00
+#define   IF_USB_HUB_HISPEED_SINGLE_TT  0x01
+#define   IF_USB_HUB_HISPEED_MULTI_TT   0x02
+
+/* ============================================================== */
+/*                        DISK Bus Codes                          */
+/* ============================================================== */
+
+#define BASE_DISK_PARTITION             0x0000
+#define  SUB_DISK_PARTITION_ID0         0x0000
+#define   IF_DISK_PARTITION_ID0_DEVID0  0x0000
 
 /* ============================================================== */
 /*                          Don't Care                            */

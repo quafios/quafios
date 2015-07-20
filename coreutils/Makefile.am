@@ -3,11 +3,10 @@ include $(top_srcdir)/generic.am
 OBJECT_NAME   = coreutils
 OBJECT_PREFIX = $(BIN_DIR)
 LIBS          = -lc -lgcc
-OBJ           = $(shell echo $(CFILES) | sed 's/\.c/\.o/g')
 DEPS          = $(ALLHFILES) Makefile \
-		$(GEN_INC_DIR)/kernel \
-		$(GEN_INC_DIR)/libc \
-		$(GEN_LIB_DIR)/libc
+                $(KERNEL_INCLUDE) \
+		$(LIBC_INCLUDE) \
+		$(LIBC_LIB)
 
 %.o: %.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -80,4 +79,5 @@ uninstall-local:
 all-local: umount mount rmdir mkdir rm unlink link mknod dir ls cat readsect
 
 clean-local:
-	rm -f $(OBJ) umount mount rmdir mkdir rm unlink link mknod dir ls cat
+	rm -f $(OBJ) umount mount rmdir mkdir rm unlink link mknod dir ls \
+	      cat readsect

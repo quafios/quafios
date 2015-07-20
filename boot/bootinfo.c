@@ -6,8 +6,8 @@
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
- * This file is part of Quafios 1.0.2 source code.
- * Copyright (C) 2014  Mostafa Abd El-Aziz Mohamed.
+ * This file is part of Quafios 2.0.1 source code.
+ * Copyright (C) 2015  Mostafa Abd El-Aziz Mohamed.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,7 +53,7 @@ void bootinfo_init() {
 
         __asm__("int $0x15":"=a"(sign),"=b"(cont),"=c"(bytes)
                            :"D"(&smap_entry),"d"(0x534D4150 /*SMAP*/),
-                            "b"(cont),"a"(0x0000E820));
+                            "c"(0x14),"b"(cont),"a"(0x0000E820));
         if (sign != 0x534D4150) {
             printf("Can't read BIOS memory map!\n");
             while(1);
