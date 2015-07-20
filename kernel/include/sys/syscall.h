@@ -65,5 +65,6 @@
 #define SYS_SEND        0x1F
 #define SYS_RECEIVE     0x20
 #define SYS_GETPID      0x21
+#define SYS_REBOOT      0x22
 
 #endif

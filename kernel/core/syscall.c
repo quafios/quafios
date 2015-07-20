@@ -74,6 +74,7 @@ int32_t syscall(int32_t number, ...) {
         case SYS_SEND:      return DO_CALL(send     );
         case SYS_RECEIVE:   return DO_CALL(receive  );
         case SYS_GETPID:    return DO_CALL(getpid   );
+        case SYS_REBOOT:    return DO_CALL(legacy_reboot);
         default:            return -EINVAL;
 
     }

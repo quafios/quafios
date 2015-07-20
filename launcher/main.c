@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <gui.h>
 #include <api/proc.h>
+#include <api/sys.h>
 
 void launch(int selected) {
 
@@ -50,6 +51,9 @@ void launch(int selected) {
         /* control panel */
         if (!fork())
             execve("/bin/cpanel", NULL, NULL);
+    } else if (selected == 4) {
+        /* turn off */
+        reboot();
     }
 }
 
