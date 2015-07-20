@@ -12,9 +12,11 @@ CREDITS         credits file .
 DISCLAIMER      disclaimer information.
 FAQ             frequently asked questions.
 INSTALL         installation instructions.
+LICENSE         copyright and licensing information.
 MANIFEST        this file.
 NEWS            a basic changelog intended for users.
 README          the readme file.
+README.md       the readme file in markdown format.
 THANKS          people who contributed to the project.
 TODO            possible future changes.
 boot/           Quafios boot loader.
