@@ -11,4 +11,4 @@ HDA="-drive file=disk.img,format=raw"
 CDROM="-cdrom quafios-2.0.1.iso"
 SND="-soundhw pcspk"
 
-qemu -enable-kvm $CDROM $HDA -usb $FLASH -boot d
+qemu -enable-kvm $CDROM $HDA -usb $FLASH -boot d -m 128
