@@ -7,7 +7,7 @@ TODO list for next release:
 
 - Implement kfree() and pfree() and user memory freeing.
 
-- solve edit/view bugs.
+- GUI text editor and turn off
 
 --------------------------------------------------------------------------------
 
