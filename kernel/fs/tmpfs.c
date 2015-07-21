@@ -665,8 +665,41 @@ int32_t tmpfs_rmdir(inode_t *dir, char *name) {
 
 int32_t tmpfs_truncate(inode_t *inode, pos_t length) {
 
-    printk("tmpfs_truncate: not supported!\n");
-    while(1);
+    tmpfs_inode_t *tmpfs_inode = (tmpfs_inode_t *) inode->ino;
+    tmpfs_block_t *prev = NULL;
+    tmpfs_block_t *blk;
+    pos_t off = 0;
+    pos_t blkcount;
+    int32_t i;
+
+    /* count of the blocks in the new file */
+    blkcount = length/inode->blksize + ((length%inode->blksize)?1:0);
+
+    /* shrink if the file is larger */
+    while (tmpfs_inode->u.blocks.count > blkcount) {
+        /* remove from tail */
+        blk = tmpfs_inode->u.blocks.last;
+        linkedlist_aremove(&(tmpfs_inode->u.blocks), blk);
+        kfree(blk->data);
+        kfree(blk);
+    }
+
+    /* expand if the file is smaller */
+    while (tmpfs_inode->u.blocks.count < blkcount) {
+        /* add to tail */
+        blk = kmalloc(sizeof(tmpfs_block_t));
+        blk->data = kmalloc(inode->blksize);
+        linkedlist_addlast(&(tmpfs_inode->u.blocks), blk);
+        for (i = 0; i < inode->blksize; i++)
+            blk->data[i] = 0;
+    }
+
+    /* update file size... */
+    inode->size = length;
+    inode->blocks = blkcount;
+    tmpfs_update_inode(inode);
+
+    /* done */
     return ESUCCESS;
 
 }
@@ -711,9 +744,53 @@ int32_t tmpfs_release(file_t *file) {
 
 int32_t tmpfs_read(file_t *file, void *buf, int32_t size) {
 
-   printk("tmpfs_read: not supported!\n");
-   while(1);
-   return ESUCCESS;
+    pos_t off = file->pos;
+    int32_t rem = size; /* remaining */
+    int32_t blksize = file->inode->blksize;
+    tmpfs_inode_t *nod_tmpfs_inode = (tmpfs_inode_t *) file->inode->ino;
+    int32_t i, j;
+    pos_t tsize;
+
+    /* size should be a valid number */
+    if (size <= 0)
+        return EINVAL;
+
+    /* EOF? */
+    if (off >= file->inode->size)
+        return 0;
+
+    /* decrease rem if off + rem skips EOF */
+    if (off + rem > file->inode->size)
+        rem = file->inode->size - off;
+
+    /* read block by block.. */
+    while (rem) {
+
+        /* try to not skip current block. */
+        if ((tsize = blksize-off%blksize) > rem)
+            tsize = rem;
+
+        /* do the read! */
+        for (i=off%blksize,j=0; i<off%blksize+tsize; i++,j++) {
+            ((uint8_t *) buf)[j] = file->info.tmpfs.curblk->data[i];
+        }
+
+        /* update remaining: */
+        rem -= tsize;
+        off += tsize;
+        buf = ((uint8_t *) buf) + tsize;
+
+        /* move to next block */
+        if (!(off % blksize))
+            file->info.tmpfs.curblk = file->info.tmpfs.curblk->next;
+
+    }
+
+    /* update file position */
+    file->pos = off;
+
+    /* done */
+    return ESUCCESS;
 
 }
 
@@ -723,9 +800,62 @@ int32_t tmpfs_read(file_t *file, void *buf, int32_t size) {
 
 int32_t tmpfs_write(file_t *file, void *buf, int32_t size) {
 
-   printk("tmpfs_write: not supported!\n");
-   while(1);
-   return ESUCCESS;
+    pos_t off = file->pos;
+    int32_t rem = size; /* remaining */
+    int32_t blksize = file->inode->blksize;
+    tmpfs_inode_t *nod_tmpfs_inode = (tmpfs_inode_t *) file->inode->ino;
+    int32_t i, j;
+    pos_t tsize;
+
+    /* size should be a valid number */
+    if (size <= 0)
+        return EINVAL;
+
+    /* update file size... */
+    if (off + rem > file->inode->size) {
+        file->inode->size   = off+rem;
+        file->inode->blocks = (file->inode->size/blksize) +
+                              ((file->inode->size%blksize) ? 1:0);
+        tmpfs_update_inode(file->inode);
+    }
+
+    /* write block by block.. */
+    while (rem) {
+
+        /* try to not skip current block. */
+        if ((tsize = blksize-off%blksize) > rem)
+            tsize = rem;
+
+        /* if block is empty, allocate */
+        if (!file->info.tmpfs.curblk) {
+            /* allocate new block */
+            tmpfs_block_t *tmpfs_block = kmalloc(sizeof(tmpfs_block_t));
+            tmpfs_block->data = kmalloc(blksize);
+            linkedlist_addlast(&(nod_tmpfs_inode->u.blocks), tmpfs_block);
+            file->info.tmpfs.curblk = tmpfs_block;
+        }
+
+        /* do the write! */
+        for (i=off%blksize,j=0; i<off%blksize+tsize; i++,j++) {
+            file->info.tmpfs.curblk->data[i] = ((uint8_t *) buf)[j];
+        }
+
+        /* update remaining: */
+        rem -= tsize;
+        off += tsize;
+        buf = ((uint8_t *) buf) + tsize;
+
+        /* move to next block */
+        if (!(off % blksize))
+            file->info.tmpfs.curblk = file->info.tmpfs.curblk->next;
+
+    }
+
+    /* update file position */
+    file->pos = off;
+
+    /* done */
+    return ESUCCESS;
 
 }
 
@@ -735,12 +865,33 @@ int32_t tmpfs_write(file_t *file, void *buf, int32_t size) {
 
 int32_t tmpfs_seek(file_t *file, pos_t newpos) {
 
-   printk("tmpfs_seek: not supported!\n");
-   while(1);
-   return ESUCCESS;
+    /* seek the first block */
+    tmpfs_inode_t *tmpfs_inode = (tmpfs_inode_t *) file->inode->ino;
+    file->info.tmpfs.curblk  = tmpfs_inode->u.blocks.first;
+    file->info.tmpfs.off = 0;
+
+    /* truncate if seek goes past EOF */
+    if (newpos > file->inode->size) {
+        truncate(file->inode, newpos);
+    }
+
+    /* loop over blocks of the file until we reach the block we want */
+    while (file->info.tmpfs.curblk) {
+
+        if (file->info.tmpfs.off + file->inode->blksize > newpos) {
+            /* we are done */
+            file->info.tmpfs.off = newpos;
+            break;
+        }
+
+        file->info.tmpfs.off += file->inode->blksize;
+        file->info.tmpfs.curblk = file->info.tmpfs.curblk->next;
+    }
+
+    /* error happened */
+    return ESUCCESS;
 
 }
-
 
 /***************************************************************************/
 /*                                readdir()                                */
