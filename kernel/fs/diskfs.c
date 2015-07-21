@@ -1339,12 +1339,20 @@ int32_t diskfs_truncate(inode_t *inode, pos_t length) {
 
     /* init some vars */
     diskfs_blk_t i;
-    pos_t oldsize = inode->size;
-    pos_t newsize = length;
+    pos_t oldsize;
+    pos_t newsize;
+    diskfs_blk_t last_blk;
+    diskfs_blk_t start_blk;
 
-    diskfs_blk_t last_blk = oldsize/inode->blksize;
-    diskfs_blk_t start_blk = newsize/inode->blksize +
-                             (newsize%inode->blksize ? 1 : 0);
+    /* inode should be a regular file */
+    if ((inode->mode & FT_MASK) != FT_REGULAR)
+        return EINVAL;
+
+    /* initialize data */
+    oldsize   = inode->size;
+    newsize   = length;
+    last_blk  = oldsize/inode->blksize;
+    start_blk = newsize/inode->blksize + (newsize%inode->blksize ? 1 : 0);
 
     /* delete truncated blocks: */
     for (i = start_blk; i <= last_blk; i++)
