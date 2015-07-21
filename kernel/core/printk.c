@@ -104,3 +104,23 @@ void printk(const char *format, ...) {
     printk_byaddr((uint32_t *) (ebp + 8));
 }
 
+
+uint32_t sputs(char *buf, char *str) {
+    strcpy(buf, str);
+    return strlen(str);
+}
+
+uint32_t sputd(char *buf, int32_t value) {
+    if (value < 0) {
+        *buf = '-';
+        return sputd(buf+1, -value)+1;
+    } else {
+        uint32_t n = value / 10;
+        int32_t  r = value % 10;
+        uint32_t count = 0;
+        if (value >= 10)
+            count = sputd(buf, n);
+        buf[count] = r+'0';
+        return count+1;
+    }
+}

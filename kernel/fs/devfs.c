@@ -268,7 +268,7 @@ void devfs_reg(char *name, int32_t devid) {
     } else {
         /* add to staging */
         devfs_file_t *cur = staging;
-        devfs_file_t *devfs_file = kmalloc(sizeof(devfs_file_t *));
+        devfs_file_t *devfs_file = kmalloc(sizeof(devfs_file_t));
         devfs_file->filename = kmalloc(strlen(name)+1);
         strcpy(devfs_file->filename, name);
         devfs_file->devid = devid;

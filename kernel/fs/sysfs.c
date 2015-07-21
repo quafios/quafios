@@ -34,95 +34,14 @@
 
 super_block_t *sysfs_sb = NULL;
 
-typedef struct {
+typedef struct sysfile {
+    struct sysfile *next;
     char *name;
     ino_t ino;
+    char *(*read)(uint32_t *size);
 } sysfile_t;
 
-sysfile_t sysfiles[] = {{"dev"}, {"mem"}, {"mount"}};
-
-/***************************************************************************/
-/*                               sysfiles                                  */
-/***************************************************************************/
-
-static uint32_t printstr(char *buf, char *str) {
-    strcpy(buf, str);
-    return strlen(str);
-}
-
-static uint32_t printnum(char *buf, int32_t value) {
-    if (value < 0) {
-        *buf = '-';
-        return printnum(buf+1, -value)+1;
-    } else {
-        uint32_t n = value / 10;
-        int32_t  r = value % 10;
-        uint32_t count = 0;
-        if (value >= 10)
-            count = printnum(buf, n);
-        buf[count] = r+'0';
-        return count+1;
-    }
-}
-
-static char *sysfs_dev_read(uint32_t *max) {
-    uint32_t count = 0;
-    extern linkedlist devices;
-    device_t *dev = (device_t *) devices.first;
-    char *buf = kmalloc(devices.count*80+1);
-    if (!buf)
-        return NULL;
-    /* loop over devices */
-    while (dev) {
-        if (dev->driver) {
-            count += printstr(&buf[count], dev->driver->alias);
-        } else {
-            count += printstr(&buf[count], "nodriver");
-        }
-        count += printstr(&buf[count], " ");
-        count += printnum(&buf[count], dev->devid);
-        count += printstr(&buf[count], " ");
-        count += printnum(&buf[count], dev->cls.bus);
-        count += printstr(&buf[count], " ");
-        count += printnum(&buf[count], dev->cls.base);
-        count += printstr(&buf[count], " ");
-        count += printnum(&buf[count], dev->cls.sub);
-        count += printstr(&buf[count], " ");
-        count += printnum(&buf[count], dev->cls.progif);
-        count += printstr(&buf[count], "\n");
-        dev = dev->next;
-    }
-    *max = count;
-    /* done */
-    return buf;
-}
-
-static char *sysfs_mem_read(uint32_t *max) {
-    return NULL;
-}
-
-static char *sysfs_mount_read(uint32_t *max) {
-    return NULL;
-}
-
-static char *getbuf(ino_t ino, uint32_t *max) {
-    int i;
-    for (i = 0; i < sizeof(sysfiles)/sizeof(sysfile_t); i++) {
-        if (sysfiles[i].ino == ino) {
-            /* file found */
-            if (!strcmp(sysfiles[i].name, "dev")) {
-                return sysfs_dev_read(max);
-            } else if (!strcmp(sysfiles[i].name, "mem")) {
-                return sysfs_mem_read(max);
-            } else if (!strcmp(sysfiles[i].name, "mount")) {
-                return sysfs_mount_read(max);
-            } else {
-                return NULL;
-            }
-        }
-    }
-    return NULL;
-}
+sysfile_t *sysfiles = NULL;
 
 /***************************************************************************/
 /*                              read_super                                 */
@@ -134,17 +53,19 @@ super_block_t *sysfs_read_super(device_t *dev) {
     else {
         int i;
         inode_t *root;
+        sysfile_t *cur = sysfiles;
         /* mount tmpfs */
         sysfs_sb = (super_block_t *) tmpfs_read_super(dev);
         sysfs_sb->fsdriver = &sysfs_t;
         /* create system files */
         root = (inode_t *) iget(sysfs_sb, sysfs_sb->root_ino);
-        for (i = 0; i < sizeof(sysfiles)/sizeof(sysfile_t); i++) {
+        while (cur) {
             inode_t *child;
-            tmpfs_mknod(root, sysfiles[i].name, FT_REGULAR, 0);
-            tmpfs_lookup(root, sysfiles[i].name, &child);
-            sysfiles[i].ino = child->ino;
+            tmpfs_mknod(root, cur->name, FT_REGULAR, 0);
+            tmpfs_lookup(root, cur->name, &child);
+            cur->ino = child->ino;
             iput(child);
+            cur = cur->next;
         }
         iput(root);
         /* done */
@@ -254,9 +175,15 @@ int32_t sysfs_truncate(inode_t *inode, pos_t length) {
 
 int32_t sysfs_open(file_t *file) {
     if ((file->inode->mode & FT_MASK) == FT_REGULAR) {
-        /* regular file */
-        file->info.tmpfs.dummy_p =
-            getbuf(file->inode->ino, &file->info.tmpfs.dummy_i);
+        sysfile_t *cur = sysfiles;
+        char *(*read)(uint32_t *size);
+        while (cur && cur->ino != file->inode->ino) {
+            cur = cur->next;
+        }
+        if (!cur)
+            return EIO;
+        read = cur->read;
+        file->info.tmpfs.dummy_p = read(&file->info.tmpfs.dummy_i);
         if (!file->info.tmpfs.dummy_p)
             return ENOMEM;
         else
@@ -373,3 +300,66 @@ fsd_t sysfs_t = {
     /* ioctl:        */ sysfs_ioctl
 
 };
+
+
+/***************************************************************************/
+/*                               sysfs_reg()                               */
+/***************************************************************************/
+
+void sysfs_reg(char *name, char *(*read)(uint32_t *size)) {
+    /* add to list */
+    sysfile_t *cur = sysfiles;
+    sysfile_t *sysfile = kmalloc(sizeof(sysfile_t));
+    sysfile->name = kmalloc(strlen(name)+1);
+    strcpy(sysfile->name, name);
+    sysfile->read = read;
+    sysfile->ino = 0;
+    sysfile->next = NULL;
+    if (!sysfiles) {
+        sysfiles = sysfile;
+    } else {
+        while (cur->next) {
+            cur = cur->next;
+        }
+        cur->next = sysfile;
+    }
+    /* add to filesystem */
+    if (sysfs_sb) {
+        inode_t *root = (inode_t *) iget(sysfs_sb, sysfs_sb->root_ino);
+        inode_t *child;
+        tmpfs_mknod(root, sysfile->name, FT_REGULAR, 0);
+        tmpfs_lookup(root, sysfile->name, &child);
+        sysfile->ino = child->ino;
+        iput(child);
+        iput(root);
+    }
+}
+
+/***************************************************************************/
+/*                              sysfs_unreg()                              */
+/***************************************************************************/
+
+void sysfs_unreg(char *name) {
+    /* remove from linkedlist */
+    sysfile_t *prev = NULL;
+    sysfile_t *cur  = sysfiles;
+    while (cur) {
+        if (!strcmp(cur->name, name)) {
+            if (!prev) {
+                sysfiles = cur->next;
+            } else {
+                prev->next = cur->next;
+            }
+            kfree(cur->name);
+            kfree(cur);
+            break;
+        }
+        cur = cur->next;
+    }
+    /* remove from filesystem */
+    if (sysfs_sb) {
+        inode_t *root = (inode_t *) iget(sysfs_sb, sysfs_sb->root_ino);
+        tmpfs_unlink(root, name);
+        iput(root);
+    }
+}

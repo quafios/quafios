@@ -230,6 +230,42 @@ uint32_t dev_irq(device_t *dev, uint32_t irqn) {
 }
 
 /* ================================================================= */
+/*                            get_devices()                          */
+/* ================================================================= */
+
+char *get_devices(uint32_t *size) {
+    uint32_t count = 0;
+    extern linkedlist devices;
+    device_t *dev = (device_t *) devices.first;
+    char *buf = kmalloc(devices.count*80+1);
+    if (!buf)
+        return NULL;
+    /* loop over devices */
+    while (dev) {
+        if (dev->driver) {
+            count += sputs(&buf[count], dev->driver->alias);
+        } else {
+            count += sputs(&buf[count], "nodriver");
+        }
+        count += sputs(&buf[count], " ");
+        count += sputd(&buf[count], dev->devid);
+        count += sputs(&buf[count], " ");
+        count += sputd(&buf[count], dev->cls.bus);
+        count += sputs(&buf[count], " ");
+        count += sputd(&buf[count], dev->cls.base);
+        count += sputs(&buf[count], " ");
+        count += sputd(&buf[count], dev->cls.sub);
+        count += sputs(&buf[count], " ");
+        count += sputd(&buf[count], dev->cls.progif);
+        count += sputs(&buf[count], "\n");
+        dev = dev->next;
+    }
+    *size = count;
+    /* done */
+    return buf;
+}
+
+/* ================================================================= */
 /*                            dev_init()                             */
 /* ================================================================= */
 
@@ -247,6 +283,9 @@ void dev_init() {
     /* initialize linked lists: */
     linkedlist_init(&devices);
     linkedlist_init(&busses);
+
+    /* add dev file to sysfs */
+    sysfs_reg("dev", get_devices);
 
     /* load the root driver: */
     dev_add(&t, NULL, cls, reslist, NULL);
