@@ -1,11 +1,15 @@
 TODO list for next release:
 ----------------------------
 
-- Implement EHCI
 - tmpfs unimplemented routines (and mount /tmp and /run as tmpfs).
+- get rid of udev.
+- change realtest to mcdboot, and also make mdiskboot
+- support disk booting by Quafios (make diskboot.s)
 - Quafios installation on a disk.
 
 - Implement kfree() and pfree() and user memory freeing.
+
+- Implement EHCI
 
 --------------------------------------------------------------------------------
 
