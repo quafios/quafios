@@ -223,6 +223,9 @@ uint32_t i8253_probe(device_t *dev, void *config) {
 
     }
 
+    /* add to devfs */
+    devfs_reg("timer", dev->devid);
+
     /* done: */
     printk("i8253 interval timer driver loaded.\n");
     return ESUCCESS;

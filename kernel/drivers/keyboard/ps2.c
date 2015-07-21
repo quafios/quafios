@@ -436,11 +436,10 @@ uint32_t ps2kbd_probe(device_t *dev, void *config) {
     info->escaped = 0;
     info->dev = dev;
 
-    printk("PS/2 Keyboard driver is initializing...\n");
-
     /* no initialization is to be done.. the i8042 driver and
      * the ATKBC firmware driver did everything needed.
      */
+    printk("PS/2 Keyboard driver is initializing...\n");
 
     /* catch the IRQs: */
     reserve = kmalloc(sizeof(irq_reserve_t));
@@ -455,6 +454,10 @@ uint32_t ps2kbd_probe(device_t *dev, void *config) {
     /* update leds: */
     update_leds(info);
 
+    /* add to devfs */
+    devfs_reg("keyboard", dev->devid);
+
+    /* done */
     return ESUCCESS;
 }
 

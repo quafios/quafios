@@ -38,5 +38,4 @@ rash/           Quafios shell program.
 scripts/        Scripts used by Makefiles.
 shell/          Quafios old shell program.
 tools/          Tools used to install Quafios on various storage media.
-udev/           Quafios udev utility.
 winman/         GUI window manager.

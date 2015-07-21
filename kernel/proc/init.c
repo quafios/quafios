@@ -34,6 +34,10 @@
 #include <sys/fs.h>
 #include <arch/stack.h>
 
+uint32_t bootdisk = 0xFFFFFFFF; /* TODO: This is a temporary method
+                                 *       for boot-disk detection...
+                                 */
+
 void proc_init() {
 
     /* Process Manager Initialization */
@@ -111,14 +115,22 @@ void proc_init() {
     /* (V) Open console streams:  */
     /* -------------------------- */
     /* create device file for console: */
-    mknod("/dev/console", FT_SPECIAL, system_console->devid);
+    mknod("/console", FT_SPECIAL, system_console->devid);
 
     /* open console file: */
-    open("/dev/console", 0); /* this will open the file at fd "0". */
+    open("/console", 0); /* this will open the file at fd "0". */
     dup(0); /* duplicate at fd "1". */
     dup(0); /* duplicate at fd "2". */
 
-    /* (VI) Execute "init" program to initialize the operating system:  */
+    /* (VI) Mount boot disk:  */
+    /* ---------------------- */
+    /* create a device file for bootdisk */
+    mknod("/bootdisk", FT_SPECIAL, bootdisk);
+
+    /* mount as diskfs filesystem */
+    mount("/bootdisk", "/", "diskfs", 0, NULL);
+
+    /* (VII) Execute "init" program to initialize the operating system:  */
     /* ---------------------------------------------------------------- */
     /*synctest();*/
     printk("Executing \"%s\" ...\n\n", initpath);

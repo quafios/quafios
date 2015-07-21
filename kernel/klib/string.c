@@ -27,6 +27,7 @@
  */
 
 #include <arch/type.h>
+#include <sys/mm.h>
 #include <lib/string.h>
 
 int strcmp(const char *str1, const char *str2) {
@@ -43,8 +44,9 @@ size_t strlen(const char * str) {
     return i;
 }
 
-void strcpy(char *dest, char *src) {
+char *strcpy(char *dest, char *src) {
     while(*dest++ = *src++);
+    return dest;
 }
 
 void strncpy(char *dest, char *src, int32_t count) {
@@ -113,4 +115,36 @@ String toString(char *str) {
     ret.size = strlen(str);
     ret.s = str;
     return ret;
+}
+
+char *itoa(int value, char *str, int base) {
+
+    int i = 0, j = 0;
+
+    char tmp[20];
+
+    if (base > 16)
+        return NULL;
+
+    if (!value) {
+        return strcpy(str, "0");
+    }
+
+    if (value < 0) {
+        value = -value;
+        str[j++] = '-';
+    }
+
+    while (value) {
+        tmp[i++] = value%base;
+        value /= base;
+    }
+
+    while (i > 0)
+        str[j++] = "0123456789abcdef"[tmp[--i]];
+
+    str[j] = 0;
+
+    return str;
+
 }

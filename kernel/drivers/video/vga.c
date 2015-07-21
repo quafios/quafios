@@ -598,6 +598,9 @@ uint32_t vga_probe(device_t *dev, void *config) {
     /* get vga mode from bootinfo structure */
     vga_mode = bootinfo->vga_mode;
 
+    /* add to devfs */
+    devfs_reg("vga", dev->devid);
+
     /* do nothing if graphics is disabled */
     if (vga_mode == 0)
         return ESUCCESS;
@@ -625,6 +628,7 @@ uint32_t vga_probe(device_t *dev, void *config) {
         vga_scanline = bootinfo->vga_scanline;
     }
 
+    /* set buffer to legacy framebuffer */
     vga = legacy_vga_fbuf;
 
     /* done: */

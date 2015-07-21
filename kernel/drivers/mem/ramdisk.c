@@ -35,6 +35,7 @@
 #include <sys/resource.h>
 #include <sys/device.h>
 #include <mem/ramdisk.h>
+#include <storage/disk.h>
 
 /* Prototypes: */
 uint32_t ramdisk_probe(device_t *, void *);
@@ -63,6 +64,7 @@ driver_t ramdisk_driver = {
 typedef struct {
     uint32_t base;
     uint32_t size;
+    disk_t *disk;
 } info_t;
 
 /* ================================================================= */
@@ -72,17 +74,27 @@ typedef struct {
 uint32_t ramdisk_probe(device_t *dev, void *config) {
     ramdisk_init_t *cfg = config;
     extern uint32_t bootdisk;
+    int32_t i;
 
+    /* create info structure */
     info_t *info = (info_t *) kmalloc(sizeof(info_t));
     dev->drvreg = (uint32_t) info;
     if (info == NULL)
             return ENOMEM; /* i am sorry :D */
 
+    /* initialize info structure */
     info->base = cfg->base;
     info->size = cfg->size;
 
+    /* set bootdisk */
     bootdisk = dev->devid;
 
+    /* register disk */
+    info->disk = kmalloc(sizeof(disk_t));
+    info->disk->dev = dev;
+    add_disk(info->disk, "rd", 0);
+
+    /* done */
     return ESUCCESS;
 }
 

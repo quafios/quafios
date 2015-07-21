@@ -2,7 +2,7 @@
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
  *        | |  Quafios Kernel 2.0.1.                               | |
- *        | |  -> File Manager.                                    | |
+ *        | |  -> Abstract disk management layer header.           | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
@@ -26,19 +26,16 @@
  *
  */
 
+#ifndef STORAGE_DISK_H
+#define STORAGE_DISK_H
+
 #include <arch/type.h>
-#include <sys/fs.h>
-#include <sys/mm.h>
+#include <sys/device.h>
 
-void fs_init() {
+typedef struct disk {
+    struct disk *next;
+    char *name;
+    device_t *dev;
+} disk_t;
 
-    /* print init message: */
-    printk("Quafios filesystem is starting...\n");
-
-    /* initialize caches: */
-    icache_init();
-    
-    /* mount tmpfs to the root. */
-    mount("", "/", "tmpfs", 0, NULL);
-
-}
+#endif

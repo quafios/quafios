@@ -35,12 +35,17 @@
 #include <sys/resource.h>
 #include <sys/device.h>
 
-void partprobe(device_t *dev) {
+int32_t partprobe(int32_t devid) {
 
     bus_t *diskbus;
     device_t *subdev;
     class_t cls;
     reslist_t reslist = {0, NULL};
+    device_t *dev = (device_t *) devid_to_dev(devid);
+
+    /* not a device? */
+    if (!devid)
+        return -EINVAL;
 
     /* make generic disk bus */
     dev_mkbus(&diskbus, BUS_DISK, dev);
@@ -49,5 +54,8 @@ void partprobe(device_t *dev) {
     if (has_mbr(dev)) {
         mbr_scan(dev);
     }
+
+    /* done */
+    return ESUCCESS;
 
 }

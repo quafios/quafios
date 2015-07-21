@@ -134,6 +134,9 @@ uint32_t ps2mouse_probe(device_t *dev, void *config) {
     reserve->data    = NULL;
     irq_reserve(dev->resources.list[0].data.irq.number, reserve);
 
+    /* add to devfs */
+    devfs_reg("mouse", dev->devid);
+
     /* done */
     return ESUCCESS;
 

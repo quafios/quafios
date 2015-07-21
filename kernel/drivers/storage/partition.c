@@ -36,6 +36,7 @@
 #include <sys/device.h>
 #include <sys/bootinfo.h>
 #include <sys/scheduler.h>
+#include <storage/disk.h>
 
 /* Prototypes: */
 uint32_t partition_probe(device_t *, void *);
@@ -63,7 +64,9 @@ driver_t partition_driver = {
 
 typedef struct {
     device_t *diskdev;
-    uint64_t base;
+    uint64_t  base;
+    disk_t   *disk;
+    char     *name;
 } info_t;
 
 /* ================================================================= */
@@ -81,6 +84,15 @@ uint32_t partition_probe(device_t *dev, void *config) {
     /* set info_t structure */
     info->diskdev = (device_t *) devid_to_dev(dev->cls.progif);
     info->base = *((uint64_t *) config) * 512;
+    info->disk = (disk_t *) get_disk_by_devid(info->diskdev->devid);
+    info->name = kmalloc(100);
+
+    /* register at devfs */
+    if (info->disk) {
+        strcpy(info->name, info->disk->name);
+        itoa(dev->cls.sub, &info->name[strlen(info->disk->name)], 10);
+        devfs_reg(info->name, dev->devid);
+    }
 
     /* done */
     return ESUCCESS;

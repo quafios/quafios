@@ -34,9 +34,6 @@ mount /run tmpfs
 mount /dev devfs
 mount /sys sysfs
 
-# run udev
-udev
-
 # run winman
 winman &
 

@@ -77,12 +77,10 @@ driver_t vtty_driver = {
 };
 
 static void print_char(char c) {
-    /* TODO: this should send that character to all video devices. */
     legacy_video_putc(c);
 }
 
 static void change_attr(char attr) {
-    /* TODO: this should change attr in all video devices. */
     legacy_video_attr(attr);
 }
 
@@ -148,6 +146,7 @@ static void press(char c) {
 uint32_t vtty_probe(device_t *dev, void *config) {
     /* tell the system that i am the system console: */
     system_console = (void *) dev;
+    devfs_reg("console", dev->devid);
     return ESUCCESS;
 }
 

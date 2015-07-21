@@ -34,6 +34,14 @@
 
 super_block_t *devfs_sb = NULL;
 
+typedef struct devfs_file {
+    struct devfs_file *next;
+    char *filename;
+    int32_t devid;
+} devfs_file_t;
+
+static devfs_file_t *staging = NULL;
+
 /***************************************************************************/
 /*                              read_super                                 */
 /***************************************************************************/
@@ -41,10 +49,24 @@ super_block_t *devfs_sb = NULL;
 super_block_t *devfs_read_super(device_t *dev) {
     if (devfs_sb)
         return devfs_sb;
-    else
+    else {
+        int32_t i;
+        inode_t *root;
+        /* mount devfs for the first time */
         devfs_sb = (super_block_t *) tmpfs_read_super(dev);
         devfs_sb->fsdriver = &devfs_t;
+        /* create device files */
+        root = (inode_t *) iget(devfs_sb, devfs_sb->root_ino);
+        while (staging) {
+            devfs_file_t *df = staging;
+            staging = staging->next;
+            tmpfs_mknod(root, df->filename, FT_SPECIAL, df->devid);
+            kfree(df->filename);
+            kfree(df);
+        }
+        iput(root);
         return devfs_sb;
+    }
 }
 
 /***************************************************************************/
@@ -232,3 +254,62 @@ fsd_t devfs_t = {
     /* ioctl:        */ devfs_ioctl
 
 };
+
+/***************************************************************************/
+/*                               devfs_reg()                               */
+/***************************************************************************/
+
+void devfs_reg(char *name, int32_t devid) {
+    if (devfs_sb) {
+        /* create node normally */
+        inode_t *root = (inode_t *) iget(devfs_sb, devfs_sb->root_ino);
+        tmpfs_mknod(root, name, FT_SPECIAL, devid);
+        iput(root);
+    } else {
+        /* add to staging */
+        devfs_file_t *cur = staging;
+        devfs_file_t *devfs_file = kmalloc(sizeof(devfs_file_t *));
+        devfs_file->filename = kmalloc(strlen(name)+1);
+        strcpy(devfs_file->filename, name);
+        devfs_file->devid = devid;
+        devfs_file->next = NULL;
+        if (!staging) {
+            staging = devfs_file;
+        } else {
+            while (cur->next) {
+                cur = cur->next;
+            }
+            cur->next = devfs_file;
+        }
+    }
+}
+
+/***************************************************************************/
+/*                              devfs_unreg()                              */
+/***************************************************************************/
+
+void devfs_unreg(char *name) {
+    if (devfs_sb) {
+        /* create node normally */
+        inode_t *root = (inode_t *) iget(devfs_sb, devfs_sb->root_ino);
+        tmpfs_unlink(root, name);
+        iput(root);
+    } else {
+        /* remove from staging */
+        devfs_file_t *prev = NULL;
+        devfs_file_t *cur  = staging;
+        while (cur) {
+            if (!strcmp(cur->filename, name)) {
+                if (!prev) {
+                    staging = cur->next;
+                } else {
+                    prev->next = cur->next;
+                }
+                kfree(cur->filename);
+                kfree(cur);
+                break;
+            }
+            cur = cur->next;
+        }
+    }
+}

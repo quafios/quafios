@@ -1,7 +1,6 @@
 TODO list for next release:
 ----------------------------
 
-- get rid of udev.
 - sysfs restructuring.
 
 - change realtest to mcdboot, and also make mdiskboot

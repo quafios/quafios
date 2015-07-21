@@ -37,6 +37,7 @@
 #include <sys/bootinfo.h>
 #include <sys/scheduler.h>
 #include <pci/pci.h>
+#include <storage/disk.h>
 #include <ata/ide.h>
 
 /* Prototypes: */
@@ -69,6 +70,7 @@ typedef struct {
     uint32_t cache_lock;
     uint64_t cache_sect;
     char     cache_data[512];
+    disk_t  *disk;
 } info_t;
 
 /* ================================================================= */
@@ -140,8 +142,10 @@ uint32_t atadisk_probe(device_t *dev, void *drive_ptr) {
     info->cache_lock = 0;
     info->cache_sect = -1;
 
-    /* scan for partitions */
-    partprobe(dev);
+    /* register disk */
+    info->disk = kmalloc(sizeof(disk_t));
+    info->disk->dev = dev;
+    add_disk(info->disk, "sd", 1);
 
     /* done */
     return ESUCCESS;

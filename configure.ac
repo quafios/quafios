@@ -12,9 +12,8 @@ AC_CONFIG_FILES(Makefile
                 boot/Makefile
                 qlibc/Makefile
                 init/Makefile
-                udev/Makefile
-                shell/Makefile
                 rash/Makefile
+                shell/Makefile
                 coreutils/Makefile
                 calc/Makefile
                 edit/Makefile
