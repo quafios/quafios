@@ -29,6 +29,8 @@
 echo Quafios init script has taken control... Welcome to Quafios!
 
 # mount filesystems
+mount /tmp tmpfs
+mount /run tmpfs
 mount /dev devfs
 mount /sys sysfs
 
