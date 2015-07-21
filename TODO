@@ -3,6 +3,8 @@ TODO list for next release:
 
 - tmpfs unimplemented routines (and mount /tmp and /run as tmpfs).
 - get rid of udev.
+- sysfs restructuring.
+
 - change realtest to mcdboot, and also make mdiskboot
 - support disk booting by Quafios (make diskboot.s)
 - Quafios installation on a disk.
