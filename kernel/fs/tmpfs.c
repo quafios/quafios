@@ -444,7 +444,7 @@ int32_t tmpfs_unlink(inode_t *dir, char *name) {
 
     /* look up for the matching entry: */
     p = dir_tmpfs_inode->u.dentries.first;
-    while(p && ((!p->inode) || strcmp(name, p->name)))
+    while(p && (p->inode==0 || p->inode==1 || strcmp(name, p->name)))
         p = p->next;
 
     /* found? */
@@ -612,7 +612,7 @@ int32_t tmpfs_rmdir(inode_t *dir, char *name) {
 
     /* look up for the matching entry: */
     p = dir_tmpfs_inode->u.dentries.first;
-    while(p && ((!p->inode) || strcmp(name, p->name)))
+    while(p && (p->inode==0 || p->inode==1 || strcmp(name, p->name)))
         p = p->next;
 
     /* found? */
