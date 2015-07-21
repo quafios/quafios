@@ -482,8 +482,108 @@ int32_t tmpfs_unlink(inode_t *dir, char *name) {
 
 int32_t tmpfs_mkdir(inode_t *dir, char *name, int32_t mode) {
 
-    printk("tmpfs_mkdir: not supported!\n");
-    while(1);
+    /* local variables */
+    int32_t err;
+    tmpfs_inode_t *dir_tmpfs_inode = (tmpfs_inode_t *) dir->ino;
+    tmpfs_inode_t *nod_tmpfs_inode;
+    tmpfs_ino_t ino;
+    inode_t *inode;
+    char *fsname;
+    tmpfs_dentry_t *p, *dot, *dotdot;
+
+    /* parent must be a directory. */
+    if ((dir->mode & FT_MASK) != FT_DIR)
+        return ENOTDIR;
+
+    /* parent is already deleted? */
+    if (!(dir->ref))
+        return ENOENT;
+
+    /* name shouldn't exist. */
+    err = tmpfs_lookup(dir, name, NULL);
+    if (!err) {
+        return EEXIST;
+    } else if (err != ENOENT) {
+        return err;
+    }
+
+    /* allocate a new inode: */
+    ino = (tmpfs_ino_t) kmalloc(sizeof(tmpfs_inode_t));
+    if (!ino)
+        return ENOSPC;
+    nod_tmpfs_inode = (tmpfs_inode_t *) ino;
+    linkedlist_init(&(nod_tmpfs_inode->u.blocks));
+
+    /* get the inode: */
+    inode = (inode_t *) iget(dir->sb, ino);
+
+    /* initialize the inode: */
+    inode->ref   = 1;
+    inode->mode  = mode;
+    inode->size  = 0;
+    inode->devid = 0;
+    tmpfs_update_inode(inode);
+
+    /* put the inode: */
+    iput(inode);
+
+    /* create <.> directory entry: */
+    dot = kmalloc(sizeof(tmpfs_dentry_t));
+    if (!dot) {
+        return ENOMEM;
+    }
+    dot->inode = (ino_t) nod_tmpfs_inode;
+    dot->name  = kmalloc(2);
+    if (!(dot->name)) {
+        kfree(dot);
+        return ENOMEM;
+    }
+    dot->name[0] = '.';
+    dot->name[1] = 0;
+    linkedlist_addlast(&(nod_tmpfs_inode->u.dentries), dot);
+
+    /* create <..> entry: */
+    dotdot = kmalloc(sizeof(tmpfs_dentry_t));
+    if (!dotdot) {
+        return ENOMEM;
+    }
+    dotdot->inode = (ino_t) dir_tmpfs_inode;
+    dotdot->name  = kmalloc(3);
+    if (!(dotdot->name)) {
+        kfree(dotdot);
+        return ENOMEM;
+    }
+    dotdot->name[0] = '.';
+    dotdot->name[1] = '.';
+    dotdot->name[2] = 0;
+    linkedlist_addlast(&(nod_tmpfs_inode->u.dentries), dotdot);
+
+    /* allocate space for name of the directory: */
+    fsname = kmalloc(strlen(name)+1);
+    if (!fsname)
+        return ENOMEM;
+    strcpy(fsname, name);
+
+    /* look up for an empty entry in the parent */
+    p = dir_tmpfs_inode->u.dentries.first;
+    while(p && (p->inode > 1))
+        p = p->next;
+
+    /* no empty entry? allocate a new one! */
+    if (!p) {
+        if (!(p = kmalloc(sizeof(tmpfs_dentry_t)))) {
+            kfree(fsname);
+            return ENOMEM;
+        }
+        linkedlist_addlast(&(dir_tmpfs_inode->u.dentries), p);
+        tmpfs_update_inode(dir);
+    }
+
+    /* fill in the entry: */
+    p->inode = ino;
+    p->name  = fsname;
+
+    /* done */
     return ESUCCESS;
 
 }
@@ -494,8 +594,67 @@ int32_t tmpfs_mkdir(inode_t *dir, char *name, int32_t mode) {
 
 int32_t tmpfs_rmdir(inode_t *dir, char *name) {
 
-    printk("tmpfs_rmdir: not supported!\n");
-    while(1);
+    /* local variables */
+    int32_t err;
+    tmpfs_inode_t *dir_tmpfs_inode = (tmpfs_inode_t *) dir->ino;
+    tmpfs_inode_t *nod_tmpfs_inode;
+    tmpfs_dentry_t *p, *pp;
+    inode_t *inode;
+    pos_t entcount = 0;
+
+    /* parent must be a directory. */
+    if ((dir->mode & FT_MASK) != FT_DIR)
+        return ENOTDIR;
+
+    /* parent is already deleted? */
+    if (!(dir->ref))
+        return ENOENT;
+
+    /* look up for the matching entry: */
+    p = dir_tmpfs_inode->u.dentries.first;
+    while(p && ((!p->inode) || strcmp(name, p->name)))
+        p = p->next;
+
+    /* found? */
+    if (!p)
+        return ENOENT; /* not found! */
+
+    /* get the inode */
+    inode = (inode_t *) iget(dir->sb, p->inode);
+
+    /* file must be a directory */
+    if ((inode->mode & FT_MASK) != FT_DIR) {
+        iput(inode);
+        return ENOTDIR;
+    }
+
+    /* get count of entries in the target: */
+    nod_tmpfs_inode = (tmpfs_inode_t *) inode->ino;
+    pp = nod_tmpfs_inode->u.dentries.first;
+    while (pp) {
+        if (pp->inode != 0 && pp->inode != 1)
+            entcount++;
+        pp = pp->next;
+    }
+
+    /* directory is not empty? */
+    if (entcount > 2) {
+        iput(inode);
+        return ENOTEMPTY;
+    }
+
+    /* decrease references: */
+    inode->ref--;
+    tmpfs_update_inode(inode);
+
+    /* put the inode */
+    iput(inode);
+
+    /* remove entry from parent directory */
+    p->inode = 1;
+    kfree(p->name);
+
+    /* done: */
     return ESUCCESS;
 
 }
