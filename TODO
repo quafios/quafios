@@ -1,7 +1,6 @@
 TODO list for next release:
 ----------------------------
 
-- tmpfs unimplemented routines (and mount /tmp and /run as tmpfs).
 - get rid of udev.
 - sysfs restructuring.
 
