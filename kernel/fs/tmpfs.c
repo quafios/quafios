@@ -362,8 +362,62 @@ int32_t tmpfs_mknod(inode_t *dir, char *name, int32_t mode, int32_t devid) {
 
 int32_t tmpfs_link(inode_t *inode, inode_t *dir, char *name) {
 
-    printk("tmpfs_link: not supported!\n");
-    while(1);
+    /* local variables */
+    int32_t err;
+    tmpfs_inode_t *dir_tmpfs_inode = (tmpfs_inode_t *) dir->ino;
+    char *fsname;
+    tmpfs_dentry_t *p;
+
+    /* parent must be a directory. */
+    if ((dir->mode & FT_MASK) != FT_DIR)
+        return ENOTDIR;
+
+    /* parent is already deleted? */
+    if (!(dir->ref))
+        return ENOENT;
+
+    /* name shouldn't exist. */
+    err = tmpfs_lookup(dir, name, NULL);
+    if (!err) {
+        return EEXIST;
+    } else if (err != ENOENT) {
+        return err;
+    }
+
+    /* inode should not be directory: */
+    if ((inode->mode & FT_MASK) == FT_DIR)
+        return EISDIR;
+
+    /* increase references count: */
+    inode->ref++;
+    tmpfs_update_inode(inode);
+
+    /* allocate space for name: */
+    fsname = kmalloc(strlen(name)+1);
+    if (!fsname)
+        return ENOMEM;
+    strcpy(fsname, name);
+
+    /* look up for an empty entry */
+    p = dir_tmpfs_inode->u.dentries.first;
+    while(p && (p->inode > 1))
+        p = p->next;
+
+    /* no empty entry? allocate a new one! */
+    if (!p) {
+        if (!(p = kmalloc(sizeof(tmpfs_dentry_t)))) {
+            kfree(fsname);
+            return ENOMEM;
+        }
+        linkedlist_addlast(&(dir_tmpfs_inode->u.dentries), p);
+        tmpfs_update_inode(dir);
+    }
+
+    /* fill in the entry: */
+    p->inode = inode->ino;
+    p->name  = fsname;
+
+    /* done */
     return ESUCCESS;
 
 }
@@ -374,19 +428,22 @@ int32_t tmpfs_link(inode_t *inode, inode_t *dir, char *name) {
 
 int32_t tmpfs_unlink(inode_t *dir, char *name) {
 
-    printk("tmpfs_unlink: not supported!\n");
-    while(1);
-    return ESUCCESS;
+    /* local variables */
+    int32_t err;
+    tmpfs_inode_t *dir_tmpfs_inode = (tmpfs_inode_t *) dir->ino;
+    tmpfs_dentry_t *p;
+    inode_t *inode;
 
-#if 0
-    /* remove entry */
-
-    /* inode must be a directory. */
+    /* parent must be a directory. */
     if ((dir->mode & FT_MASK) != FT_DIR)
         return ENOTDIR;
 
+    /* parent is already deleted? */
+    if (!(dir->ref))
+        return ENOENT;
+
     /* look up for the matching entry: */
-    tmpfs_dentry_t *p = dir->info.tmpfs.u.dentries.first;
+    p = dir_tmpfs_inode->u.dentries.first;
     while(p && ((!p->inode) || strcmp(name, p->name)))
         p = p->next;
 
@@ -394,11 +451,28 @@ int32_t tmpfs_unlink(inode_t *dir, char *name) {
     if (!p)
         return ENOENT; /* not found! */
 
-    /* done: */
-    kfree(p->name);
+    /* get the inode */
+    inode = (inode_t *) iget(dir->sb, p->inode);
+
+    /* directory? */
+    if ((inode->mode & FT_MASK) == FT_DIR) {
+        iput(inode);
+        return EISDIR;
+    }
+
+    /* decrease references: */
+    inode->ref--;
+    tmpfs_update_inode(inode);
+
+    /* put the inode */
+    iput(inode);
+
+    /* remove entry */
     p->inode = 1;
+    kfree(p->name);
+
+    /* done: */
     return ESUCCESS;
-#endif
 
 }
 
@@ -516,14 +590,21 @@ int32_t tmpfs_seek(file_t *file, pos_t newpos) {
 int32_t tmpfs_readdir(file_t *file, dirent_t *dirent) {
 
     /* read next entry */
-    if (!file->info.tmpfs.curdent) {
-        return 0;
-    } else {
-        dirent->ino = file->info.tmpfs.curdent->inode;
-        strcpy(dirent->name, file->info.tmpfs.curdent->name);
-        file->info.tmpfs.curdent = file->info.tmpfs.curdent->next;
-        return 1;
+    while (file->info.tmpfs.curdent) {
+        if (file->info.tmpfs.curdent->inode > 1) {
+            /* return the entry */
+            dirent->ino = file->info.tmpfs.curdent->inode;
+            strcpy(dirent->name, file->info.tmpfs.curdent->name);
+            file->info.tmpfs.curdent = file->info.tmpfs.curdent->next;
+            return 1;
+        } else {
+            /* next entry */
+            file->info.tmpfs.curdent = file->info.tmpfs.curdent->next;
+        }
     }
+
+    /* no more entries */
+    return 0;
 
 }
 
