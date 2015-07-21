@@ -89,7 +89,7 @@ int main(int argc, char *argv[], char *envp[]) {
 
         /* stat. */
         if (stat(dir.name, &st)) {
-            printf("can't stat %d\n", dir.name);
+            printf("can't stat %s\n", dir.name);
         } else {
 
             entry = malloc(sizeof(lsentry_t));
