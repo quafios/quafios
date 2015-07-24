@@ -37,7 +37,7 @@ pixbuf_t *parse_png(char *filename) {
     FILE *file;
     unsigned char sign[8] = {0};
     pixbuf_t *pixbuf; /* the pixel buffer */
-    unsigned char *compressed; /* compressed data  */
+    unsigned char *compressed = NULL; /* compressed data  */
     int pos = 0; /* pointer for writing data into compressed */
     unsigned char *filt;
     stat_t info;
@@ -69,7 +69,6 @@ pixbuf_t *parse_png(char *filename) {
 
     /* allocate compressed data buffer */
     stat(filename, &info);
-    compressed = malloc((int) info.size);
 
     /* Read PNG chunks */
     while (1) {
@@ -115,6 +114,9 @@ pixbuf_t *parse_png(char *filename) {
 
             /* filtered data buffer */
             filt = malloc(pixbuf->height*(pixbuf->width*4+1));
+
+            /* allocate compressed buffer */
+            compressed = malloc((int) info.size);
 
             /* currently, PNG only supports DEFLATE/INFLATE compression
              * method.

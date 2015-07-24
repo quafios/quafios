@@ -213,9 +213,9 @@ HFILES = $(shell find $(CSD)/include/ -name "*.h" 2>/dev/null)
 AFILES = $(shell find $(CSD)/lib/     -name "*.a" 2>/dev/null)
 SFILES = $(shell find $(CSD)/         -name "*.s" 2>/dev/null)
 KERNEL_INCLUDE = $(shell find $(TSD)/kernel/include -name "*.h" 2>/dev/null)
-QLIBC_INCLUDE = $(shell find $(TSD)/qlibc/include  -name "*.h" 2>/dev/null)
+LIBC_INCLUDE = $(shell find $(TSD)/qlibc/include  -name "*.h" 2>/dev/null)
 LIBGUI_INCLUDE = $(shell find $(TSD)/gui/include    -name "*.h" 2>/dev/null)
-QLIBC_LIB = $(shell find $(TBD)/qlibc/lib      -name "*.a" 2>/dev/null)
+LIBC_LIB = $(shell find $(TBD)/qlibc/lib      -name "*.a" 2>/dev/null)
 LIBGUI_LIB = $(shell find $(TBD)/gui/lib        -name "*.a" 2>/dev/null)
 CFLAGS = -fno-stack-protector -fno-exceptions -fno-zero-initialized-in-bss \
          -ffunction-sections -fno-builtin -Wno-pointer-to-int-cast -Werror \
@@ -439,7 +439,7 @@ uninstall-includes:
 
 uninstall-libraries:
 
-%.o: %.c $(DEPS)
+%.o:%.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 lib/$(OBJECT_NAME).a: $(OBJ)

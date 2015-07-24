@@ -77,7 +77,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 DIST_COMMON = $(top_srcdir)/generic.am $(srcdir)/Makefile.in \
 	$(srcdir)/Makefile.am
-subdir = shell
+subdir = qash
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -213,9 +213,9 @@ HFILES = $(shell find $(CSD)/include/ -name "*.h" 2>/dev/null)
 AFILES = $(shell find $(CSD)/lib/     -name "*.a" 2>/dev/null)
 SFILES = $(shell find $(CSD)/         -name "*.s" 2>/dev/null)
 KERNEL_INCLUDE = $(shell find $(TSD)/kernel/include -name "*.h" 2>/dev/null)
-QLIBC_INCLUDE = $(shell find $(TSD)/qlibc/include  -name "*.h" 2>/dev/null)
+LIBC_INCLUDE = $(shell find $(TSD)/qlibc/include  -name "*.h" 2>/dev/null)
 LIBGUI_INCLUDE = $(shell find $(TSD)/gui/include    -name "*.h" 2>/dev/null)
-QLIBC_LIB = $(shell find $(TBD)/qlibc/lib      -name "*.a" 2>/dev/null)
+LIBC_LIB = $(shell find $(TBD)/qlibc/lib      -name "*.a" 2>/dev/null)
 LIBGUI_LIB = $(shell find $(TBD)/gui/lib        -name "*.a" 2>/dev/null)
 CFLAGS = -fno-stack-protector -fno-exceptions -fno-zero-initialized-in-bss \
          -ffunction-sections -fno-builtin -Wno-pointer-to-int-cast -Werror \
@@ -257,9 +257,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(top_srcdir)/generic.am $(am__con
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu shell/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu qash/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu shell/Makefile
+	  $(AUTOMAKE) --gnu qash/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \

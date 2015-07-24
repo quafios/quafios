@@ -271,6 +271,7 @@ int32_t truncate(char *pathname, pos_t length) {
     int32_t err;
 
     /* get the inode structure: */
+    /*printk("truncate: %s\n", pathname);*/
     if (err = namei(NULL, pathname, &namei_data))
         return -err;
 

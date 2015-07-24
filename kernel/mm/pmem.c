@@ -26,11 +26,6 @@
  *
  */
 
-/* pmem.c
- * Physical Memory Management Unit.
- * I have no idea what i am doing here -_-'
- */
-
 #include <arch/type.h>
 #include <sys/error.h>
 #include <lib/linkedlist.h>
@@ -203,6 +198,7 @@ void pmem_init() {
                 /* a free page frame! */
                 linkedlist_addlast(&pfreelist, (linknode *) &pmmap[frame]);
                 pmem_usable_pages++;
+                ram_size = frame+1;
             }
         }
 

@@ -1,8 +1,6 @@
 TODO list for next release:
 ----------------------------
 
-- Implement kfree() and pfree() and user memory freeing.
-
 - change realtest to mcdboot, and also make mdiskboot
 - support disk booting by Quafios (make diskboot.s)
 - Quafios installation on a disk.
@@ -30,8 +28,6 @@ The release after next:
 - fat
 - iso9660.
 
-- hexedit
-
 - signals and pipes
-
+- ajust concurrency very properly in various kernel parts
 - Make kernel design modular (everything is a module).

@@ -51,6 +51,15 @@ int32_t umem_init(umem_t *umem) {
 
 }
 
+int32_t umem_reinit(umem_t *umem) {
+
+    /* called by execve after freeing all user-allocated mem regions */
+    umem->heap_start = 0;
+    umem->brk_addr   = 0;
+    umem->heap_end   = 0;
+
+}
+
 int32_t umem_copy(umem_t *src, umem_t *dest) {
 
     /* used by fork() to copy src into dest. */
@@ -98,10 +107,21 @@ int32_t umem_copy(umem_t *src, umem_t *dest) {
 
 void umem_free(umem_t *umem) {
 
-    /* re-initialize heap: */
-    umem->heap_start = 0;
-    umem->brk_addr   = 0;
-    umem->heap_end   = 0;
+    uint32_t i, j;
+
+    /* clear whole memory */
+    for (i=USER_MEMORY_BASE; i<KERNEL_MEMORY_BASE; i+=PAGE_DIR_SIZE) {
+
+        if (!arch_vmdir_isMapped(umem, i))
+            continue;
+
+        for (j = i; j < i + PAGE_DIR_SIZE; j+=PAGE_SIZE) {
+            if (!arch_vmpage_isMapped(umem, j))
+                continue;
+            arch_vmpage_unmap(umem, j);
+        }
+
+    }
 
 }
 
@@ -193,7 +213,7 @@ uint32_t mmap(uint32_t base, uint32_t size, uint32_t type,
                     return 0;
                 region->pos = off;
                 region->paddr = 0;
-                region->ref = 0;
+                region->ref = 1;
             }
             /* attach the virtual page to the mapping */
             arch_vmpage_attach_file(umem, (int32_t) addr, region);
@@ -206,9 +226,28 @@ uint32_t mmap(uint32_t base, uint32_t size, uint32_t type,
     return base;
 }
 
-int32_t munmap() {
-
-
+int32_t munmap(uint32_t base, uint32_t size) {
+    uint32_t addr, pages;
+    umem_t *umem = &(curproc->umem); /* current process umem image. */
+    /* alignment */
+    size += base & (~PAGE_BASE_MASK);     /* rectify "size". */
+    base = base & PAGE_BASE_MASK;
+    pages = (size+PAGE_SIZE-1)/PAGE_SIZE; /* pages to be allocated. */
+    size = pages*PAGE_SIZE;               /* actual size. */
+    /* unmap pages */
+    for (addr = base; addr < base + size; addr+=PAGE_SIZE) {
+        if (!arch_vmpage_isMapped(umem, addr))
+            continue;
+        arch_vmpage_unmap(umem, addr);
+    }
+    /* update heap parameters */
+    if (base >= umem->heap_end) {
+        while (!arch_vmpage_isMapped(umem, umem->heap_end)) {
+            umem->heap_end+=PAGE_SIZE;
+        }
+    }
+    /* done */
+    return ESUCCESS;
 }
 
 uint32_t brk(uint32_t addr) {

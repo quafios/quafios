@@ -35,7 +35,7 @@
 
 typedef _linkedlist(inode_t) ill; /* inode linked list. */
 
-ill *ihashtable[IHASH_COUNT]; /* le hash table of inode. */
+ill *ihashtable[IHASH_COUNT]; /* hash table of inode. */
 
 void icache_init() {
     /* initalize the hash table */
@@ -137,8 +137,10 @@ void iput(inode_t *p) {
     linkedlist_aremove(ihashtable[h], p);
 
     /* linked list is free? */
-    if (!(ihashtable[h]->count))
+    if (!(ihashtable[h]->count)) {
         kfree(ihashtable[h]);
+        ihashtable[h] = NULL;
+    }
 
     /* unallocate the inode structure */
     kfree(p);

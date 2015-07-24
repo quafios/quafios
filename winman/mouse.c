@@ -92,11 +92,12 @@ int abs(int x) {
 void show_box(int x1, int y1, int width, int height) {
 
     int i;
+    pixbuf_t *line1, *line2, *line3, *line4;
 
-    pixbuf_t *line1 = pixbuf_alloc(width, 1);
-    pixbuf_t *line2 = pixbuf_alloc(width, 1);
-    pixbuf_t *line3 = pixbuf_alloc(1, height);
-    pixbuf_t *line4 = pixbuf_alloc(1, height);
+    line1 = pixbuf_alloc(width, 1);
+    line2 = pixbuf_alloc(width, 1);
+    line3 = pixbuf_alloc(1, height);
+    line4 = pixbuf_alloc(1, height);
 
     pixbuf_crop(get_osm(), line1, x1, y1);
     for (i = 0; i < line1->width * line1->height; i++)
@@ -117,6 +118,11 @@ void show_box(int x1, int y1, int width, int height) {
     for (i = 0; i < line4->width * line4->height; i++)
         line4->buf[i] = 0x00FFFFFF ^ line4->buf[i];
     vga_plot(line4, x1+width-1, y1);
+
+    pixbuf_free(line1);
+    pixbuf_free(line2);
+    pixbuf_free(line3);
+    pixbuf_free(line4);
 
 }
 
@@ -140,6 +146,11 @@ void hide_box(int x1, int y1, int width, int height) {
 
     pixbuf_crop(get_osm(), line4, x1+width-1, y1);
     vga_plot(line4, x1+width-1, y1);
+
+    pixbuf_free(line1);
+    pixbuf_free(line2);
+    pixbuf_free(line3);
+    pixbuf_free(line4);
 
 }
 

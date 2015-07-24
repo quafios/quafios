@@ -66,5 +66,6 @@
 #define SYS_RECEIVE     0x20
 #define SYS_GETPID      0x21
 #define SYS_REBOOT      0x22
+#define SYS_MUNMAP      0x23
 
 #endif

@@ -48,18 +48,20 @@ readsect: readsect.o
 	$(CC) $(LFLAGS) -o $@ $< $(LIBS)
 
 install-exec-local:
-	$(INSTALL) -D umount   $(OBJECT_PREFIX)/umount
-	$(INSTALL) -D mount    $(OBJECT_PREFIX)/mount
-	$(INSTALL) -D rmdir    $(OBJECT_PREFIX)/rmdir
-	$(INSTALL) -D mkdir    $(OBJECT_PREFIX)/mkdir
-	$(INSTALL) -D rm       $(OBJECT_PREFIX)/rm
-	$(INSTALL) -D unlink   $(OBJECT_PREFIX)/unlink
-	$(INSTALL) -D link     $(OBJECT_PREFIX)/link
-	$(INSTALL) -D mknod    $(OBJECT_PREFIX)/mknod
-	$(INSTALL) -D dir      $(OBJECT_PREFIX)/dir
-	$(INSTALL) -D ls       $(OBJECT_PREFIX)/ls
-	$(INSTALL) -D cat      $(OBJECT_PREFIX)/cat
-	$(INSTALL) -D readsect $(OBJECT_PREFIX)/readsect
+	$(INSTALL) -D umount       $(OBJECT_PREFIX)/umount
+	$(INSTALL) -D mount        $(OBJECT_PREFIX)/mount
+	$(INSTALL) -D rmdir        $(OBJECT_PREFIX)/rmdir
+	$(INSTALL) -D mkdir        $(OBJECT_PREFIX)/mkdir
+	$(INSTALL) -D rm           $(OBJECT_PREFIX)/rm
+	$(INSTALL) -D unlink       $(OBJECT_PREFIX)/unlink
+	$(INSTALL) -D link         $(OBJECT_PREFIX)/link
+	$(INSTALL) -D mknod        $(OBJECT_PREFIX)/mknod
+	$(INSTALL) -D dir          $(OBJECT_PREFIX)/dir
+	$(INSTALL) -D ls           $(OBJECT_PREFIX)/ls
+	$(INSTALL) -D cat          $(OBJECT_PREFIX)/cat
+	$(INSTALL) -D readsect     $(OBJECT_PREFIX)/readsect
+	$(INSTALL) -D $(CSD)/free  $(OBJECT_PREFIX)/free
+	$(INSTALL) -D $(CSD)/lsdev $(OBJECT_PREFIX)/lsdev
 
 uninstall-local:
 	rm -f $(OBJECT_PREFIX)/umount
@@ -74,6 +76,8 @@ uninstall-local:
 	rm -f $(OBJECT_PREFIX)/ls
 	rm -f $(OBJECT_PREFIX)/cat
 	rm -f $(OBJECT_PREFIX)/readsect
+	rm -f $(OBJECT_PREFIX)/free
+	rm -f $(OBJECT_PREFIX)/lsdev
 	- $(call REMOVE_EMPTY_DIR, $(prefix))
 
 all-local: umount mount rmdir mkdir rm unlink link mknod dir ls cat readsect

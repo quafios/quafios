@@ -334,15 +334,30 @@ uint32_t arch_vmpage_unmap(umem_t *umem, int32_t vaddr) {
     pagetbl = (uint32_t *)(arch_umem.page_dir_ext[pde]&PAGE_BASE_MASK);
     pe = (vaddr >> 12) & 0x3FF; /* page entry; */
 
-    if (pagetbl[pe] & PAGE_ENTRY_P)
-        ppfree(pagetbl[pe] & PAGE_BASE_MASK);
+    if (arch_umem.region_dir[pde] && arch_umem.region_dir[pde]->region[pe]) {
+        arch_umem.region_dir[pde]->region[pe]->ref--;
+        if (!arch_umem.region_dir[pde]->region[pe]->ref) {
+            file_t *file = arch_umem.region_dir[pde]->region[pe]->file;
+            if (arch_umem.region_dir[pde]->region[pe]->paddr) {
+                ppfree(arch_umem.region_dir[pde]->region[pe]->paddr);
+            }
+            linkedlist_aremove(&(file->inode->sma),
+                arch_umem.region_dir[pde]->region[pe]);
+            kfree(arch_umem.region_dir[pde]->region[pe]);
+            file_close(arch_umem.region_dir[pde]->region[pe]->file);
+        }
+        arch_umem.region_dir[pde]->region[pe] = 0;
+    } else {
+        if (pagetbl[pe] & PAGE_ENTRY_P)
+            ppfree(pagetbl[pe] & PAGE_BASE_MASK);
+    }
+
     pagetbl[pe] = 0;
-    arch_umem.region_dir[pde]->region[pe] = 0;
 
     if (arch_umem.page_dir_ext[pde] & PAGE_EXT_REMOVABLE)
         arch_umem.page_dir_ext[pde]--;
 
-    if (arch_umem.page_dir_ext[pde]&PAGE_FLAG_MASK==PAGE_EXT_REMOVABLE) {
+    if ((arch_umem.page_dir_ext[pde]&PAGE_FLAG_MASK)==PAGE_EXT_REMOVABLE) {
         /* page table is empty */
         kfree(arch_umem.page_dir_ext[pde] & PAGE_BASE_MASK);
         arch_umem.page_dir_ext[pde] = 0;
@@ -469,9 +484,13 @@ void arch_vmswitch(umem_t *umem) {
     set_cr3(arch_umem.page_dir_phys);
 }
 
-void arch_vmdestroy() {
+void arch_vmdestroy(umem_t *umem) {
     /* called on termination of a process */
-
+    arch_umem_t *arch_umem = (arch_umem_t *) umem->arch_reg;
+    kfree(arch_umem->region_dir);
+    kfree(arch_umem->page_dir_ext);
+    kfree(arch_umem->page_dir);
+    kfree(arch_umem);
 }
 
 /****************************************************************************/

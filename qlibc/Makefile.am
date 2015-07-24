@@ -4,7 +4,7 @@ OBJECT_NAME   = libc
 DEPS          = $(ALLHFILES) Makefile \
 		$(KERNEL_INCLUDE)
 
-%.o: %.c $(DEPS)
+%.o:%.c $(DEPS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 lib/$(OBJECT_NAME).a: $(OBJ)

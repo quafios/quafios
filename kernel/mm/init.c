@@ -26,6 +26,51 @@
  *
  */
 
+#include <arch/type.h>
+#include <sys/mm.h>
+#include <lib/linkedlist.h>
+
+char *mm_stats(int32_t *size) {
+    extern linkedlist pfreelist;
+    extern linkedlist freelist[33];
+    extern int32_t pmem_usable_pages, kalloc_size, ram_size;
+    char *buf = kmalloc(4096);
+    int32_t i, sum = 0;
+    /*buf = kmalloc(4096);*/
+    buf[0] = 0;
+    *size = 0;
+    *size += sputs(&buf[*size], "Physical free:   ");
+    *size += sputd(&buf[*size], pfreelist.count);
+    *size += sputs(&buf[*size], " (");
+    *size += sputd(&buf[*size], pfreelist.count*4);
+    *size += sputs(&buf[*size], "KB)\n");
+    *size += sputs(&buf[*size], "Physical usable: ");
+    *size += sputd(&buf[*size], pmem_usable_pages);
+    *size += sputs(&buf[*size], " (");
+    *size += sputd(&buf[*size], pmem_usable_pages*4);
+    *size += sputs(&buf[*size], "KB)\n");
+    *size += sputs(&buf[*size], "Physical total:  ");
+    *size += sputd(&buf[*size], ram_size);
+    *size += sputs(&buf[*size], " (");
+    *size += sputd(&buf[*size], ram_size*4);
+    *size += sputs(&buf[*size], "KB)\n");
+    *size += sputs(&buf[*size], "Buddy map: ");
+    for (i = 0; i < 33; i++) {
+        *size += sputd(&buf[*size], freelist[i].count);
+        *size += sputs(&buf[*size], " ");
+        sum += (1<<i)*freelist[i].count;
+    }
+    *size += sputs(&buf[*size], "\n            (");
+    *size += sputd(&buf[*size], sum);
+    *size += sputs(&buf[*size], ") ");
+    *size += sputs(&buf[*size], "(");
+    *size += sputd(&buf[*size], kalloc_size);
+    *size += sputs(&buf[*size], ")");
+    *size += sputs(&buf[*size], "\n");
+    buf[*size] = 0;
+    return buf;
+}
+
 void mm_init() {
 
     /* Initialize physical memory: */
@@ -33,6 +78,9 @@ void mm_init() {
 
     /* Initialize kernel memory: */
     kmem_init();
+
+    /* register in sysfs */
+    sysfs_reg("mem", mm_stats);
 
 #if 0
     /* Output statistics: */

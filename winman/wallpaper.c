@@ -54,14 +54,21 @@ char *filename[6] = {
 
 void set_wallpaper(int index) {
 
+    extern int chunk_count;
+
     /* store the index on the disk */
     FILE *fd = fopen("/run/wallpaper", "w");
     fprintf(fd, "%d\n", index);
     fclose(fd);
 
+    /* deallocate current buffer */
+    if (which >= 0 && wallpaper[which]) {
+        free(wallpaper[which]->buf);
+        free(wallpaper[which]);
+    }
+
     /* read the png file */
-    if (!wallpaper[index])
-        wallpaper[index] = parse_png(filename[index]);
+    wallpaper[index] = parse_png(filename[index]);
 
     /* store the index */
     which = index;

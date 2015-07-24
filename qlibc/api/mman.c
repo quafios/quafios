@@ -79,3 +79,16 @@ void *mmap(void *base, unsigned int size, unsigned int type,
     return (void *) ret;
 
 }
+
+
+int munmap(void *base, unsigned int size) {
+
+    int ret;
+    ret = syscall(SYS_MUNMAP, base, size);
+    if (ret < 0) {
+        errno = -ret;
+        return -1;
+    }
+    return 0;
+
+}

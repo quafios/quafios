@@ -1,7 +1,7 @@
 
 include generic.am
 
-SUBDIRS= kernel boot qlibc init rash shell coreutils calc edit \
+SUBDIRS= kernel boot qlibc init rash qash coreutils calc edit \
          media gui winman qonqueror qonsole cpanel quafshot launcher \
          pascal tools
 

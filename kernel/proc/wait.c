@@ -48,10 +48,11 @@ int32_t waitpid(int32_t pid, int32_t *status) {
     if (child == NULL)
         return -1; /* pid is invalid */
 
-    while (!(child->proc->terminated)) {
+    if (!(child->proc->terminated)) {
         /* wait until the child exits. */
         curproc->blocked_for_child = pid;
         block();
+        while (!child->proc->terminated);
     };
 
     /* return status */
@@ -62,7 +63,11 @@ int32_t waitpid(int32_t pid, int32_t *status) {
 
     /* unallocated the process structure. */
     kfree(child->proc->kstack);
+    arch_vmdestroy(&child->proc->umem);
     kfree(child->proc);
+
+    /* for debugging */
+    /*mem_leaks(pid);*/
 
     /* return */
     return pid;

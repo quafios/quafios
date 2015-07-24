@@ -36,6 +36,8 @@ typedef struct pixbuf {
 
 pixbuf_t *pixbuf_alloc(unsigned int width, unsigned int height);
 
+void pixbuf_free(pixbuf_t *pixbuf);
+
 void pixbuf_set_pixel(pixbuf_t *pixbuf,
                       unsigned int x,
                       unsigned int y,

@@ -278,6 +278,9 @@ void draw_windows() {
         draw_window(windows[--i], 0, 0);
     }
 
+    /* deallocate "windows"... to keep space for "Quafios". */
+    free(windows);
+
 }
 
 void update_screen() {
@@ -299,12 +302,17 @@ void update_screen() {
 void close_window(int pid, wm_closewin_t *req) {
 
     /* close the window */
+    char fname[255];
     win_info_t *win = get_win_info(pid, req->id);
     win_info_t *ptr = first;
     win_info_t *prev = NULL;
 
     if (!win)
         return;
+
+    /* remove window file */
+    get_win_shfname(fname, win->pid, win->wid);
+    unlink(fname);
 
     /* remove from linked list */
     while (ptr && ptr != win)
@@ -315,6 +323,7 @@ void close_window(int pid, wm_closewin_t *req) {
         prev->next = win->next;
 
     /* deallocate */
+    munmap(win->pixbuf->buf, win->pixbuf->width*win->pixbuf->height*4);
     free(win->pixbuf);
     free(win->ico->buf);
     free(win->ico);

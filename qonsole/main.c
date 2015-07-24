@@ -431,6 +431,9 @@ int main(int argc, char *argv[]) {
     /* loop */
     gui_loop();
 
+    /* remove pstty file */
+    unlink(pstty_file);
+
     /* done */
     return 0;
 

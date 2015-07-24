@@ -672,6 +672,12 @@ int32_t tmpfs_truncate(inode_t *inode, pos_t length) {
     pos_t blkcount;
     int32_t i;
 
+    /* must be regular file */
+    if ((inode->mode & FT_MASK) != FT_REGULAR) {
+        /* not regular */
+        return EINVAL;
+    }
+
     /* count of the blocks in the new file */
     blkcount = length/inode->blksize + ((length%inode->blksize)?1:0);
 
@@ -865,15 +871,17 @@ int32_t tmpfs_write(file_t *file, void *buf, int32_t size) {
 
 int32_t tmpfs_seek(file_t *file, pos_t newpos) {
 
-    /* seek the first block */
     tmpfs_inode_t *tmpfs_inode = (tmpfs_inode_t *) file->inode->ino;
-    file->info.tmpfs.curblk  = tmpfs_inode->u.blocks.first;
-    file->info.tmpfs.off = 0;
 
     /* truncate if seek goes past EOF */
     if (newpos > file->inode->size) {
-        truncate(file->inode, newpos);
+        /*tmpfs_truncate(file->inode, newpos);*/
+        return EINVAL;
     }
+
+    /* seek the first block */
+    file->info.tmpfs.curblk = tmpfs_inode->u.blocks.first;
+    file->info.tmpfs.off = 0;
 
     /* loop over blocks of the file until we reach the block we want */
     while (file->info.tmpfs.curblk) {
@@ -888,7 +896,8 @@ int32_t tmpfs_seek(file_t *file, pos_t newpos) {
         file->info.tmpfs.curblk = file->info.tmpfs.curblk->next;
     }
 
-    /* error happened */
+    /* return */
+    file->pos = file->info.tmpfs.off;
     return ESUCCESS;
 
 }

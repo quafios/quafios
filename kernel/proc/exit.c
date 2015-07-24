@@ -58,7 +58,7 @@ void exit(int32_t status) {
     /* close cwd */
     file_close(curproc->cwd);
 
-    /* TODO: make all children owned by init. */
+    /* TODO: make all children be owned by init. */
 
     /* unblock the parent if waiting */
     if (curproc->parent && curproc->parent->blocked_for_child==curproc->pid) {

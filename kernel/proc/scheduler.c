@@ -112,7 +112,10 @@ void yield() {
 
 int32_t getpid() {
     /* return PID of the caller */
-    return curproc->pid;
+    if (curproc)
+        return curproc->pid;
+    else
+        return 0;
 }
 
 void unblock(int32_t pid) {

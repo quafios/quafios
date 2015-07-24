@@ -168,6 +168,7 @@ int32_t execve(char *filename, char *argv[], char *envp[]) {
                 break;
         }
         shebang[i] = 0;
+        file_close(file);
         return execve(&shebang[2], argv, NULL);
     }
 
@@ -194,11 +195,8 @@ int32_t execve(char *filename, char *argv[], char *envp[]) {
     /* unmap all memory regions allocated by current processes. */
     umem_free(&(curproc->umem));
 
-    /* create a new memory image */
-    umem_init(&(curproc->umem));
-
-    /* switch to the new memory image */
-    arch_vmswitch(&(curproc->umem));
+    /* reset heap information */
+    umem_reinit(&(curproc->umem));
 
     /* map a user stack: */
     mmap(USER_MEMORY_END-USER_STACK_SIZE, USER_STACK_SIZE,

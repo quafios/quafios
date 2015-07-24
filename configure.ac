@@ -13,7 +13,7 @@ AC_CONFIG_FILES(Makefile
                 qlibc/Makefile
                 init/Makefile
                 rash/Makefile
-                shell/Makefile
+                qash/Makefile
                 coreutils/Makefile
                 calc/Makefile
                 edit/Makefile

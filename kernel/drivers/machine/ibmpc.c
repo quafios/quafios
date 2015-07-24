@@ -394,6 +394,7 @@ void legacy_video_clear (char attr) {
         legacy_video_init();
     vga_attrib = attr;
     vga_col = vga_row = 0;
+    vga_col_old = vga_row_old = 0;
     for (i = 0; i < VGA_MAX_ROWS; i++)
         for (j = 0; j < VGA_MAX_COLS; j++)
             legacy_draw_char(0, vga_attrib, j, i);

@@ -34,8 +34,8 @@
 #include <sys/proc.h>
 
 typedef struct semaphore {
-    spinlock_t spinlock;
     int32_t counter;
+    spinlock_t spinlock;
     pd_t *head;
     pd_t *tail;
 } semaphore_t;

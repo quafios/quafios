@@ -3092,7 +3092,7 @@ END
     as_fn_error $? "Your 'rm' program is bad, sorry." "$LINENO" 5
   fi
 fi
-ac_config_files="$ac_config_files Makefile kernel/Makefile boot/Makefile qlibc/Makefile init/Makefile rash/Makefile shell/Makefile coreutils/Makefile calc/Makefile edit/Makefile media/Makefile gui/Makefile winman/Makefile qonqueror/Makefile qonsole/Makefile cpanel/Makefile quafshot/Makefile launcher/Makefile pascal/Makefile tools/Makefile"
+ac_config_files="$ac_config_files Makefile kernel/Makefile boot/Makefile qlibc/Makefile init/Makefile rash/Makefile qash/Makefile coreutils/Makefile calc/Makefile edit/Makefile media/Makefile gui/Makefile winman/Makefile qonqueror/Makefile qonsole/Makefile cpanel/Makefile quafshot/Makefile launcher/Makefile pascal/Makefile tools/Makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -3843,7 +3843,7 @@ do
     "qlibc/Makefile") CONFIG_FILES="$CONFIG_FILES qlibc/Makefile" ;;
     "init/Makefile") CONFIG_FILES="$CONFIG_FILES init/Makefile" ;;
     "rash/Makefile") CONFIG_FILES="$CONFIG_FILES rash/Makefile" ;;
-    "shell/Makefile") CONFIG_FILES="$CONFIG_FILES shell/Makefile" ;;
+    "qash/Makefile") CONFIG_FILES="$CONFIG_FILES qash/Makefile" ;;
     "coreutils/Makefile") CONFIG_FILES="$CONFIG_FILES coreutils/Makefile" ;;
     "calc/Makefile") CONFIG_FILES="$CONFIG_FILES calc/Makefile" ;;
     "edit/Makefile") CONFIG_FILES="$CONFIG_FILES edit/Makefile" ;;

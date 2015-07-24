@@ -39,6 +39,9 @@ void _start(int argc, char *argv[], char *envp[]) {
     /* initialize streams... */
     __streams_init();
 
+    /* initialize heap */
+    heap_init();
+
     /* call the main function of the program... */
     ret = main(argc, argv, envp);
 

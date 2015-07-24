@@ -41,6 +41,7 @@
 #include <sys/ipc.h>
 #include <timer/8253.h>
 #include <timer/generic.h>
+#include <sys/semaphore.h>
 
 /* Prototypes: */
 uint32_t i8253_probe(device_t *, void *);
@@ -267,11 +268,11 @@ uint32_t i8253_irq(device_t *dev, uint32_t irqn) {
 
     /* respond to timer IRQ. */
     extern uint8_t *legacy_vga;
-    uint32_t i;
+    uint32_t i, status;
     uint32_t tt;
     char buf[10] = {0};
     msg_t msg;
-    internal_alert_t *ptr = first_alert, *new_first = NULL;
+    internal_alert_t *ptr, *prev = NULL, *next;
 
     /* get info_t structure: */
     info_t *info = (info_t *) dev->drvreg;
@@ -288,23 +289,26 @@ uint32_t i8253_irq(device_t *dev, uint32_t irqn) {
     info->clock[i].ticks++;
 
     /* alert all the processes that need to be alerted */
+    ptr = first_alert;
     while (ptr != NULL) {
         internal_alert_t *next = ptr->next;
         if (info->clock[i].ticks >= ptr->when) {
+            next = ptr->next;
             msg.buf = buf;
             msg.size = 10;
             buf[0] = ptr->prefix;
             /*printk("ticks: %d\n", (int) info->clock[0].ticks);*/
             send(ptr->pid, &msg);
             kfree(ptr);
-        } else {
-            ptr->next = new_first;
-            new_first = ptr;
+            if (prev == NULL) {
+                first_alert = next;
+            } else {
+                prev->next = next;
+            }
+            ptr = next;
         }
-        ptr = next;
     }
-    first_alert = new_first;
-
+    
     /* i sometimes enjoy watching this: */
 #if 0
     tt = (uint32_t) info->clock[i].ticks;

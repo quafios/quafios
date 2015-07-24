@@ -37,5 +37,6 @@ int brk(void *addr);
 void *sbrk(int increment);
 void *mmap(void *base, unsigned int size, unsigned int type,
            unsigned int flags, int fd, pos_t off);
+int munmap(void *base, unsigned int size);
 
 #endif
