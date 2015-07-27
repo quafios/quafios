@@ -1,10 +1,6 @@
 TODO list for next release:
 ----------------------------
 
-- change realtest to mcdboot, and also make mdiskboot
-- support disk booting by Quafios (make diskboot.s)
-- Quafios installation on a disk.
-
 - Implement EHCI
 
 --------------------------------------------------------------------------------
@@ -27,6 +23,8 @@ The release after next:
 - ntfs
 - fat
 - iso9660.
+
+- UEFI
 
 - signals and pipes
 - ajust concurrency very properly in various kernel parts

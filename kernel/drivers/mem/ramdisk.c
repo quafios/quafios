@@ -73,7 +73,6 @@ typedef struct {
 
 uint32_t ramdisk_probe(device_t *dev, void *config) {
     ramdisk_init_t *cfg = config;
-    extern uint32_t bootdisk;
     int32_t i;
 
     /* create info structure */
@@ -86,13 +85,10 @@ uint32_t ramdisk_probe(device_t *dev, void *config) {
     info->base = cfg->base;
     info->size = cfg->size;
 
-    /* set bootdisk */
-    bootdisk = dev->devid;
-
     /* register disk */
     info->disk = kmalloc(sizeof(disk_t));
     info->disk->dev = dev;
-    add_disk(info->disk, "rd", 0);
+    add_disk(info->disk, "rd", 1);
 
     /* done */
     return ESUCCESS;

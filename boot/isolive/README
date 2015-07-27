@@ -1,0 +1,12 @@
+*** Boot live Quafios from ISO medium ***
+
+ISO medium will have ramdisk.gz in its root directory. This boot program
+decompresses ramdisk.gz into memory, creating a ramdisk image. The ram disk
+has its own VBR. The bootloader then chainloads that VBR, then Quafios boots
+normally as if it was booted from a disk.
+
+The ISO medium could be a CD-ROM, fixed disk, or even a ramdisk.
+As an input to the program, the DL register contains disk number to boot
+from. if disk number = 0xFF, the boot medium is ramdisk and EDI & EBP will
+contain the memory address at which the ramdisk begins, and the size of
+the ramdisk, respectively.

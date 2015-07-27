@@ -1,5 +1,37 @@
 This is a detailed changelog.
 
+Quafios 2.0.1:
+    - Implemented PS/2 mouse driver.
+    - Implemented PCI device driver.
+    - Implemented IDE device driver.
+    - Implemented a generic ATA and SCSI disk drivers.
+    - Implemented a basic USB subsystem.
+    - Implemented UHCI driver.
+    - Implemented USB mass storage device driver.
+    - Implemented a basic USB hub driver.
+    - Implemented semaphores and spinlocks.
+    - Implemented IPC mechanisms (send() and receive()).
+    - Added support for memory-mapped files (in mmap).
+    - Completed the implementation of tmpfs, devfs, and sysfs.
+    - Introduced new system calls, like munmap and reboot.
+    - Completed the implementation of buddy memory allocation in kmem.c.
+    - Implemented the memory freeing routines.
+    - Implemented basic malloc/free in qlibc.
+    - Added VESA support and graphics mode.
+    - Added support for pseudo terminals in vtty driver.
+    - Implemented MBR partition table support.
+    - Added support for Quafios installation on disk.
+    - Re-organized the bootloader.
+    - Replaced qash with rash.
+    - Implemented winman, a window manager for Quafios.
+    - Implemented user-space GUI library for interfacing winman.
+    - Implemented GUI launcher.
+    - Implemented GUI file browser (qonqueror).
+    - Implemented GUI terminal emulator (qonsole).
+    - Implemented GUI control panel.
+    - Implemented GUI image viewer (quafshot).
+    - Implemented GUI pascal's triangle 1000th row visualizer.
+
 Quafios 1.0.2:
     - Indentation style changed to 4 spaces for each tab.
     - Comments are now written between /* */ instead of //.

@@ -1,0 +1,5 @@
+*** Quafios multiboot support ***
+
+This program is used if the user would like to boot Quafios using a multiboot-
+compliant bootloader instead of installing Quafios MBR on hard disk as it
+leads to altering other operating systems boot information.

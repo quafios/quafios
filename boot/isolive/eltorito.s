@@ -1,7 +1,7 @@
 #
 #        +----------------------------------------------------------+
 #        | +------------------------------------------------------+ |
-#        | |  Quafios Boot-Loader.                                | |
+#        | |  Quafios ISO-Live Bootstrap program.                 | |
 #        | |  -> EL-TORITO boot sector.                           | |
 #        | +------------------------------------------------------+ |
 #        +----------------------------------------------------------+
@@ -29,7 +29,7 @@
 #    ISO Boot Loader Entry    #
 ###############################
 
-.text
+.section .text.eltorito,"ax",@progbits
 .code16
 .global _start
 
@@ -53,24 +53,38 @@ dap: # disk address packet
 .word 0x00 # segment
 .quad 0x00 # LBA
 
-    # I) Setup Registers & Stacks:
-    # -----------------------------
+    # I) Setup segment registers:
+    # ----------------------------
 step_i:
-    ljmp $0,  $1f
-1:  xor  %ax, %ax
+    xor  %ax, %ax
     mov  %ax, %ds
     mov  %ax, %es
     mov  %ax, %ss
     mov  %ax, %sp
 
-    # II) Load the remainings of the boot file to memory:
-    # ----------------------------------------------------
+    # II) Copy to 0x0000:0x1000:
+    # ----------------------------
 step_ii:
-    # Store Drive Index
-    mov %dl, drive_index
+    push %di
+    mov  $0x0100, %cx
+    mov  $0x7C00, %si
+    mov  $0x1000, %di
+    rep  movsw
+    pop  %di
+    jmp  $0x0000, $step_iii
 
-    # Load DAP
-    movw $dap,                %si
+    # III) Load the remainings of the boot file to memory:
+    # -----------------------------------------------------
+step_iii:
+    # store drive index and ramdisk info (if any)
+    mov  %dl,                 drivenum
+    cmp  $0xFF,               %dl
+    jne  1f
+    mov  %edi,                ramdiskoff
+    mov  %ebp,                ramdisksize
+
+    # load DAP
+1:  movw $dap,                %si
 
     # calculate count of sectors to read.
     movl bi_BootFileLength,   %eax
@@ -80,8 +94,8 @@ step_ii:
     jz   step_iii
     movw %ax,                 2(%si)
 
-    # 0x0000:0x8000
-    movw $0x8000,             4(%si)
+    # 0x0000:0x1800
+    movw $0x1800,             4(%si)
     movw $0x0000,             6(%si)
 
     #LBA
@@ -89,24 +103,55 @@ step_ii:
     incl %eax                         # skip this track.
     movl %eax,                8(%si)
 
-    # READ
-    movb $0x42,       %ah
+    # dap is now ready
+    pusha
+    mov  drivenum, %dl
+    cmp  $0xFF, %dl
+    je   2f
+    mov  $0x42, %ah
+    mov  $dap, %si
     int  $0x13
+    popa
+    jmp  step_iv
 
-    # III) Execute loader.bin:
-    # -------------------------
-step_iii:
+    # Load sector from ramdisk
+    # Requires unreal mode. actually if boot medium
+    # is ramdisk, this means that another earlier
+    # stage was already executed and it must have
+    # entered unreal mode.
+2:  push %edi
+    push %eax
+    mov  ramdiskoff, %edi
+    mov  dap+2, %cx
+    shl  $11, %cx
+    mov  dap+4, %si
+    mov  dap+8, %eax
+    shl  $11, %eax
+    add  %eax, %edi
+3:  mov  (%edi), %al
+    mov  %al, (%si)
+    inc  %edi
+    inc  %si
+    loop 3b
+    pop  %eax
+    pop  %edi
+    popa
+
+    # IV) Jump to C main():
+    # ----------------------
+step_iv:
 .code16gcc
     mov $0, %esp
-    call 0x8000 # main() of loader.bin
-    jmp . # should never reach this place.
+    call main
 
-.org 0x1F0
-# 0x7DF0
-boot_type:   .byte 0x01  # EL-TORITO
-# 0x7DF1
-drive_index: .byte 0x00
+             .org  0x1F0 # disc boot parameters
+drivenum:    .byte 0
+ramdiskoff:  .long 0
+ramdisksize: .long 0
+partstart:   .long 0
+fstype:      .byte 0
 
 .org 0x1FE
 signature:   .word 0xAA55
-.org 0x800 # ISO Sector is 2KB.
+
+.org 0x800

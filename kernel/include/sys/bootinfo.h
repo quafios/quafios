@@ -50,7 +50,7 @@ typedef struct {
     uint32_t vga_mode;     /* 0: text mode, 1: graphics mode */
 
     /* boot disk info: */
-    /* TODO.           */
+    uint8_t  uuid[17];
 
     /* reserved RAM: */
 #define BI_BOOTLOADER   0

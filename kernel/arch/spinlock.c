@@ -28,7 +28,10 @@
 
 #include <i386/spinlock.h>
 #include <i386/type.h>
+#include <i386/asm.h>
+#include <i386/stack.h>
 #include <sys/mm.h>
+#include <sys/scheduler.h>
 
 void spinlock_init(spinlock_t *spinlock) {
     /* initialize spinlock to 0 (currently not acquired) */
@@ -49,6 +52,13 @@ void spinlock_acquire(spinlock_t *spinlock) {
      * instruction described in Stallings (5.2, 7th edition) with
      * *word = *spinlock, testval = 0, and newval = 1.
      */
+    if (scheduler_enabled && !(get_eflags() & 0x200)) {
+        Regs regs = {0};
+        __asm__("mov ., %%eax":"=a"(regs.eip));
+        __asm__("mov %%ebp, %%eax":"=a"(regs.ebp));
+        panic(&regs, "Error: spinlock_acquire() from interrupt context!");
+    }
+
     __asm__("1: lock bts $0, (%%esi);\n"
             "   jc       1b         ;\n"::"S"(spinlock));
 }

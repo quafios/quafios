@@ -8,7 +8,11 @@ CORE="-device usb-host,hostbus=$BUS,hostaddr=$DEV"
 FLASH=`if [ -n "$BUS" ]; then echo $CORE; fi`
 
 HDA="-drive file=disk.img,format=raw"
-CDROM="-cdrom quafios-2.0.1.iso"
+if [ $1 = "d" ]; then
+	CDROM="-cdrom quafios-2.0.1.iso"
+else
+	CDROM=""
+fi;
 SND="-soundhw pcspk"
 
-qemu -enable-kvm $CDROM $HDA -usb $FLASH -boot d -m 128
+qemu -enable-kvm $CDROM $HDA -usb $FLASH -boot $1 -m 128

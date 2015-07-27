@@ -1,8 +1,8 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Boot-Loader.                                | |
- *        | |  -> main() procedure.                                | |
+ *        | |  Quafios ISO-Live Bootstrap program.                 | |
+ *        | |  -> Chain loader.                                    | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
@@ -26,49 +26,16 @@
  *
  */
 
-#include <sys/bootinfo.h>
+#include <arch/type.h>
 
-extern bootinfo_t *bootinfo;
+extern uint32_t output_start;
+extern uint32_t output_end;
 
-int main() {
-
-    /* enter unreal mode */
-    enter_unreal();
-
-    /* print splash */
-    printf("\nQuafios boot loader is starting...\n");
-
-    /* show menu */
-    show_menu();
-
-    /* clear screen */
-    cls();
-
-    /* enable A20 Line */
-    enable_a20();
-
-    /* initialize bootinfo */
-    bootinfo_init();
-
-    /* decompress the ram disk */
-    gunzip("RAMDISK.GZ");
-
-    /* load kernel to memory */
-    diskfs_load("/boot/kernel.bin", bootinfo->res[BI_KERNEL].base);
-
-    /* set VGA resolution */
-    set_resolution();
-
-    /* enter protected mode & execute kernel.bin */
-    go_protected(bootinfo->res[BI_KERNEL].base);
-
-    /* set video mode 0x03: */
-    video_mode(0x03);
-
-    /* kernel returned (this should never happen) */
-    printf("Quafios kernel main() returned!\n");
-
-    /* done */
-    return 0;
-
+void chainloader() {
+    int32_t i;
+    uint32_t size = output_end-output_start;
+    for (i = 0; i < 0x200; i++)
+        ((uint8_t *) 0x7C00)[i] = ((uint8_t *) 0x1000000)[i];
+    __asm__("mov %%eax, %%ebp;\n"
+            "jmp $0, $0x7C00"::"d"(0xFF), "D"(0x1000000), "a"(size));
 }

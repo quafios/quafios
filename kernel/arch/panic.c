@@ -42,6 +42,7 @@ void panic(Regs *regs, const char *fmt, ...) {
     uint32_t cr0, cr2, cr3, esp;
     uint16_t ss;
     int32_t pid;
+    int32_t i;
     extern uint8_t bg_attrib;
 
     cli();
@@ -81,22 +82,31 @@ void panic(Regs *regs, const char *fmt, ...) {
     printk("\n SS : 0x%x     ESP: 0x%x     PID: 0x%x              ",
            ss, esp, pid);
     printk("\n");
-    printk("\n CONTROL REGISTERS: ");
-    printk("\n -----------------------");
+    printk("\n CONTROL REGISTERS:");
+    printk("\n -------------------");
     printk("\n CR0: 0x%x     CR2: 0x%x     CR3: 0x%x              ",
            cr0, cr2, cr3);
     printk("\n");
     printk("\n GENERAL REGISTERS:");
-    printk("\n -----------------------");
+    printk("\n -------------------");
     printk("\n EAX: 0x%x     EBX: 0x%x     ECX: 0x%x     EDX: 0x%x",
            regs->eax, regs->ebx, regs->ecx, regs->edx);
     printk("\n ESI: 0x%x     EDI: 0x%x     EBP: 0x%x              ",
            regs->esi, regs->edi, regs->ebp);
     printk("\n");
     printk("\n SEGMENT SELECTORS:");
-    printk("\n -----------------------");
+    printk("\n -------------------");
     printk("\n DS : 0x%x     ES : 0x%x     FS : 0x%x     GS : 0x%x",
            regs->ds, regs->es, regs->fs, regs->gs);
+    printk("\n");
+    printk("\n CALL STACK:");
+    printk("\n ------------");
+    printk("\n 0x%x", regs->eip);
+    for (i = 0; i < 4; i++) {
+        printk(" <-- 0x%x", ((int32_t*)regs->ebp)[1]);
+        regs->ebp = ((int32_t*)regs->ebp)[0];
+    }
+
 
     __asm__("jmp ."::"a"(regs->eip), "b"(curproc->pid));
 

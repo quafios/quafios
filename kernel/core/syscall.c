@@ -30,6 +30,7 @@
 #include <sys/mm.h>
 #include <sys/syscall.h>
 #include <sys/error.h>
+#include <sys/semaphore.h>
 
 #define DO_CALL(func_name) func_name(arg[1], arg[2], arg[3], arg[4], arg[5])
 #define DO_CALL2(func_name, args_type) func_name(*((args_type *) arg[1]))
@@ -37,48 +38,49 @@
 int32_t syscall(int32_t number, ...) {
 
     int32_t *arg = &number;
+    int32_t ret;
 
     switch (number) {
-
-        case SYS_MOUNT:     return DO_CALL(mount    );
-        case SYS_UMOUNT:    return DO_CALL(umount   );
-        case SYS_MKNOD:     return DO_CALL(mknod    );
-        case SYS_RENAME:    return DO_CALL(rename   );
-        case SYS_LINK:      return DO_CALL(link     );
-        case SYS_UNLINK:    return DO_CALL(unlink   );
-        case SYS_MKDIR:     return DO_CALL(mkdir    );
-        case SYS_RMDIR:     return DO_CALL(rmdir    );
-        case SYS_OPEN:      return DO_CALL(open     );
-        case SYS_CLOSE:     return DO_CALL(close    );
-        case SYS_CHDIR:     return DO_CALL(chdir    );
-        case SYS_GETCWD:    return DO_CALL(getcwd   );
-        case SYS_TRUNCATE:  return DO_CALL(truncate );
-        case SYS_FTRUNCATE: return DO_CALL(ftruncate);
-        case SYS_READ:      return DO_CALL(read     );
-        case SYS_WRITE:     return DO_CALL(write    );
-        case SYS_SEEK:      return DO_CALL(seek     );
-        case SYS_READDIR:   return DO_CALL(readdir  );
-        case SYS_STAT:      return DO_CALL(stat     );
-        case SYS_FSTAT:     return DO_CALL(fstat    );
-        case SYS_STATFS:    return DO_CALL(statfs   );
-        case SYS_FSTATFS:   return DO_CALL(fstatfs  );
-        case SYS_DUP:       return DO_CALL(dup      );
-        case SYS_DUP2:      return DO_CALL(dup2     );
-        case SYS_IOCTL:     return DO_CALL(ioctl    );
-        case SYS_EXECVE:    return DO_CALL(execve   );
-        case SYS_FORK:      return DO_CALL(fork     );
-        case SYS_WAITPID:   return DO_CALL(waitpid  );
-        case SYS_EXIT:      return DO_CALL(exit     );
-        case SYS_BRK:       return DO_CALL(brk      );
-        case SYS_MMAP:      return DO_CALL2(mmap, mmap_arg_t);
-        case SYS_SEND:      return DO_CALL(send     );
-        case SYS_RECEIVE:   return DO_CALL(receive  );
-        case SYS_GETPID:    return DO_CALL(getpid   );
-        case SYS_REBOOT:    return DO_CALL(legacy_reboot);
-        case SYS_MUNMAP:    return DO_CALL(munmap   );
-        default:            return -EINVAL;
-
+        case SYS_MOUNT:     {ret=DO_CALL(mount            ); break;}
+        case SYS_UMOUNT:    {ret=DO_CALL(umount           ); break;}
+        case SYS_MKNOD:     {ret=DO_CALL(mknod            ); break;}
+        case SYS_RENAME:    {ret=DO_CALL(rename           ); break;}
+        case SYS_LINK:      {ret=DO_CALL(link             ); break;}
+        case SYS_UNLINK:    {ret=DO_CALL(unlink           ); break;}
+        case SYS_MKDIR:     {ret=DO_CALL(mkdir            ); break;}
+        case SYS_RMDIR:     {ret=DO_CALL(rmdir            ); break;}
+        case SYS_OPEN:      {ret=DO_CALL(open             ); break;}
+        case SYS_CLOSE:     {ret=DO_CALL(close            ); break;}
+        case SYS_CHDIR:     {ret=DO_CALL(chdir            ); break;}
+        case SYS_GETCWD:    {ret=DO_CALL(getcwd           ); break;}
+        case SYS_TRUNCATE:  {ret=DO_CALL(truncate         ); break;}
+        case SYS_FTRUNCATE: {ret=DO_CALL(ftruncate        ); break;}
+        case SYS_READ:      {ret=DO_CALL(read             ); break;}
+        case SYS_WRITE:     {ret=DO_CALL(write            ); break;}
+        case SYS_SEEK:      {ret=DO_CALL(seek             ); break;}
+        case SYS_READDIR:   {ret=DO_CALL(readdir          ); break;}
+        case SYS_STAT:      {ret=DO_CALL(stat             ); break;}
+        case SYS_FSTAT:     {ret=DO_CALL(fstat            ); break;}
+        case SYS_STATFS:    {ret=DO_CALL(statfs           ); break;}
+        case SYS_FSTATFS:   {ret=DO_CALL(fstatfs          ); break;}
+        case SYS_DUP:       {ret=DO_CALL(dup              ); break;}
+        case SYS_DUP2:      {ret=DO_CALL(dup2             ); break;}
+        case SYS_IOCTL:     {ret=DO_CALL(ioctl            ); break;}
+        case SYS_EXECVE:    {ret=DO_CALL(execve           ); break;}
+        case SYS_FORK:      {ret=DO_CALL(fork             ); break;}
+        case SYS_WAITPID:   {ret=DO_CALL(waitpid          ); break;}
+        case SYS_EXIT:      {ret=DO_CALL(exit             ); break;}
+        case SYS_BRK:       {ret=DO_CALL(brk              ); break;}
+        case SYS_MMAP:      {ret=DO_CALL2(mmap, mmap_arg_t); break;}
+        case SYS_SEND:      {ret=DO_CALL(send             ); break;}
+        case SYS_RECEIVE:   {ret=DO_CALL(receive          ); break;}
+        case SYS_GETPID:    {ret=DO_CALL(getpid           ); break;}
+        case SYS_REBOOT:    {ret=DO_CALL(legacy_reboot    ); break;}
+        case SYS_MUNMAP:    {ret=DO_CALL(munmap           ); break;}
+        default:            {ret=-EINVAL                   ; break;}
     }
+
+    return ret;
 
 }
 

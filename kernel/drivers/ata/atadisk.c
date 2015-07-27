@@ -36,6 +36,7 @@
 #include <sys/device.h>
 #include <sys/bootinfo.h>
 #include <sys/scheduler.h>
+#include <sys/semaphore.h>
 #include <pci/pci.h>
 #include <storage/disk.h>
 #include <ata/ide.h>
@@ -70,6 +71,7 @@ typedef struct {
     uint32_t cache_lock;
     uint64_t cache_sect;
     char     cache_data[512];
+    semaphore_t sema;
     disk_t  *disk;
 } info_t;
 
@@ -142,6 +144,9 @@ uint32_t atadisk_probe(device_t *dev, void *drive_ptr) {
     info->cache_lock = 0;
     info->cache_sect = -1;
 
+    /* initialize semaphore */
+    sema_init(&info->sema, 1);
+
     /* register disk */
     info->disk = kmalloc(sizeof(disk_t));
     info->disk->dev = dev;
@@ -157,18 +162,23 @@ uint32_t atadisk_read(device_t *dev, uint64_t off, uint32_t size, char *buff){
     ata_drive_t *drive = info->drive;
     uint32_t max_seccount = drive->mode == ATA_AMODE_LBA48 ? 0x10000 : 0x100;
 
+    sema_down(&info->sema);
     /* head */
     if (off % 512) {
         /* offset is not sector aligned */
         uint32_t rem = (off+512)/512 - off;
         if (size <= rem) {
-            if (read_sector_part(info, off/512, off%512, size, buff))
+            if (read_sector_part(info, off/512, off%512, size, buff)) {
+                sema_up(&info->sema);
                 return EIO;
+            }
             buff += size;
             size = 0;
         } else {
-            if (read_sector_part(info, off/512, off%512, rem, buff))
+            if (read_sector_part(info, off/512, off%512, rem, buff)) {
+                sema_up(&info->sema);
                 return EIO;
+            }
             buff += rem;
             size -= rem;
         }
@@ -179,13 +189,17 @@ uint32_t atadisk_read(device_t *dev, uint64_t off, uint32_t size, char *buff){
         /* read all remaining sectors */
         uint32_t sects = size/512;
         if (sects >= max_seccount) {
-            if (read_sectors(info, max_seccount, off/512, buff))
+            if (read_sectors(info, max_seccount, off/512, buff)) {
+                sema_up(&info->sema);
                 return EIO;
+            }
             size -= max_seccount*512;
             buff += max_seccount*512;
         } else {
-            if (read_sectors(info, sects, off/512, buff))
+            if (read_sectors(info, sects, off/512, buff)) {
+                sema_up(&info->sema);
                 return EIO;
+            }
             size -= sects*512;
             buff += sects*512;
         }
@@ -193,11 +207,14 @@ uint32_t atadisk_read(device_t *dev, uint64_t off, uint32_t size, char *buff){
 
     /* tail*/
     if (size) {
-        if (read_sector_part(info, off/512, 0, size, buff))
+        if (read_sector_part(info, off/512, 0, size, buff)) {
+            sema_up(&info->sema);
             return EIO;
+        }
     }
 
     /* done */
+    sema_up(&info->sema);
     return ESUCCESS;
 }
 

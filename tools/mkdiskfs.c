@@ -56,6 +56,10 @@ __extension__ typedef uint64_t disk_size_t;
 __extension__ typedef uint64_t disk_off_t;
 
 int32_t diskfd;
+uint32_t skip_bytes = 0;
+char uuid[17] = {0};
+disk_size_t insize = 0;
+uint8_t *get_block_buf = NULL;
 
 /***************************************************************************/
 /*                                Disk I/O                                 */
@@ -69,18 +73,21 @@ int32_t disk_open(char *devfile) {
 
 disk_size_t disk_size() {
     struct stat buf;
+    if (insize) {
+        return insize;
+    }
     fstat(diskfd, &buf);
-    return buf.st_size;
+    return buf.st_size - skip_bytes;
 }
 
 int32_t disk_read(disk_off_t off, void *buf, int32_t count) {
-    if (lseek(diskfd, off, SEEK_SET) != off)
+    if (lseek(diskfd, skip_bytes+off, SEEK_SET) != skip_bytes+off)
         return 0;
     return read(diskfd, buf, count);
 }
 
 int32_t disk_write(disk_off_t off, void *buf, int32_t count) {
-    if (lseek(diskfd, off, SEEK_SET) != off)
+    if (lseek(diskfd, skip_bytes+off, SEEK_SET) != skip_bytes+off)
         return 0;
     return write(diskfd, buf, count);
 }
@@ -94,12 +101,12 @@ int32_t disk_close() {
 /***************************************************************************/
 
 int32_t read_cluster(diskfs_sb_t *sb, diskfs_pos_t clus, void *buf) {
-    disk_off_t offset = 512 /* boot sect */ + clus*sb->block_size;
+    disk_off_t offset = 1024 /* boot sect */ + clus*sb->block_size;
     return disk_read(offset, buf, sb->block_size)/sb->block_size;
 }
 
 int32_t write_cluster(diskfs_sb_t *sb, diskfs_pos_t clus, void *buf) {
-    disk_off_t offset = 512 /* boot sect */ + clus*sb->block_size;
+    disk_off_t offset = 1024 /* boot sect */ + clus*sb->block_size;
     return disk_write(offset, buf, sb->block_size)/sb->block_size;
 }
 
@@ -130,12 +137,12 @@ diskfs_sb_t *format() {
     /* Disk Size & Blocks: */
     sb->disk_size = disk_size();
     sb->block_size = BLOCK_SIZE;
-    if ((sb->disk_size-512)/sb->block_size > 0xFFFFFFFF) {
+    if ((sb->disk_size-1024)/sb->block_size > 0xFFFFFFFF) {
         printf("Disk is very big!\n");
         free(sb);
         return NULL;
     }
-    sb->total_blocks = (sb->disk_size-512)/sb->block_size;
+    sb->total_blocks = (sb->disk_size-1024)/sb->block_size;
 
     /* Inodes Map & Region:
      * inodes size is 128B.
@@ -176,7 +183,9 @@ diskfs_sb_t *format() {
 
     /* Set Identifiers: */
     strcpy(sb->name, "Quafios Disk");
-    strcpy(sb->uuid, "0123456789ABCDEF");
+    for (i = 0; i < 17; i++) {
+        sb->uuid[i] = uuid[i];
+    }
 
     /* Make sure that my calculations are correct: */
     if (sb->data_map_blocks + sb->data_blocks + sb->inode_map_blocks
@@ -222,14 +231,22 @@ void update_inode(diskfs_sb_t *sb, diskfs_ino_t ino, diskfs_inode_t *inode) {
 }
 
 diskfs_blk_t get_block(diskfs_sb_t *sb) {
-
+    int32_t i;
     diskfs_blk_t blk;
-    if (sb->free_data_blocks == 0)
+    if (sb->free_data_blocks == 0) {
+        printf("Error: Disk space is not enough!\n");
+        exit(-1);
         return 0;
+    }
     sb->free_data_blocks--;
     blk = sb->next_free_block++;
     if (sb->next_free_block == sb->data_blocks)
         sb->next_free_block = 0;
+    if (!get_block_buf)
+        get_block_buf = malloc(sb->block_size);
+    for (i = 0; i < sb->block_size; i++)
+        get_block_buf[i] = 0;
+    write_cluster(sb, blk + sb->data_start, get_block_buf);
     return blk + sb->data_start;
 
 }
@@ -537,16 +554,45 @@ int main(int argc, char *argv[]) {
 
     int32_t err;
     diskfs_sb_t *sb;
+    int i = 0, j = 0;
 
-    if (argc < 3) {
+    if (argc < 4) {
         printf("Usage: mkimage DIR IMAGE.\n");
         return -1;
     }
 
-    /* open le disk:argv[2] */
+    /* open the disk:argv[2] */
     if (err = disk_open(argv[2])) {
         printf("Error %x while opening disk %s\n", err, argv[2]);
         return err;
+    }
+
+    /* get uuid */
+    while (i < 32 && argv[3][j]) {
+        char chr = argv[3][j++];
+        if (chr >= '0' && chr <= '9') {
+            chr -= '0';
+        } else if (chr >= 'A' && chr <= 'F') {
+            chr -= 'A'-0x0A;
+        } else if (chr >= 'a' && chr <= 'f') {
+            chr -= 'a'-0x0A;
+        } else {
+            continue;
+        }
+        if (i%2) {
+            uuid[i++/2] += chr;
+        } else {
+            uuid[i++/2] = chr*0x10;
+        }
+    }
+    uuid[i/2] = 0;
+
+    /* skip any bytes? size specified? */
+    if (argv[4]) {
+        skip_bytes = atoi(argv[4]);
+        if (argv[5]) {
+            insize = atoll(argv[5]);
+        }
     }
 
     /* create the superblock: */

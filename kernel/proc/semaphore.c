@@ -42,15 +42,12 @@ void sema_init(semaphore_t *sema, int32_t counter) {
 void sema_down(semaphore_t *sema) {
     int32_t status;
     /* enter critical region */
-    status = arch_get_int_status();
-    arch_disable_interrupts();
     spinlock_acquire(&sema->spinlock);
     /* decrease semaphore counter */
     sema->counter--;
     /* special case: scheduler not initialized yet */
     if (!scheduler_enabled) {
         spinlock_release(&sema->spinlock);
-        arch_set_int_status(status);
         while (sema->counter < 0);
     }
     /* block? */
@@ -64,19 +61,15 @@ void sema_down(semaphore_t *sema) {
         }
         /* exit critical region with a block */
         block_unlock(&sema->spinlock);
-        arch_set_int_status(status);
     } else {
         /* exit critical region normally */
         spinlock_release(&sema->spinlock);
-        arch_set_int_status(status);
     }
 }
 
 void sema_up(semaphore_t *sema) {
     int32_t status;
     /* enter critical region */
-    status = arch_get_int_status();
-    arch_disable_interrupts();
     spinlock_acquire(&sema->spinlock);
     /* increase counter */
     sema->counter++;
@@ -90,5 +83,4 @@ void sema_up(semaphore_t *sema) {
     }
     /* exit critical region normally */
     spinlock_release(&sema->spinlock);
-    arch_set_int_status(status);
 }

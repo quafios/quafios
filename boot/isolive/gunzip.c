@@ -1,7 +1,7 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Boot-Loader.                                | |
+ *        | |  Quafios ISO-Live Bootstrap program.                 | |
  *        | |  -> Decompression utility.                           | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
@@ -27,9 +27,6 @@
  */
 
 #include <arch/type.h>
-#include <sys/bootinfo.h>
-
-extern bootinfo_t *bootinfo;
 
 /****************************************************************************/
 /*                                Streams                                   */
@@ -43,6 +40,9 @@ uint32_t rem = 0;
 
 uint8_t  *out;
 int32_t  outp = 0;   /* out pointer. */
+
+uint32_t output_start = 0x1000000;
+uint32_t output_end;
 
 uint8_t print_counter = 0;
 
@@ -64,7 +64,7 @@ void streamInit(char *file) {
     cdread(sector++, in);
 
     /* output: */
-    out = (uint8_t *) ((int32_t) bootinfo->res[BI_RAMDISK].base);
+    out = (uint8_t *) output_start;
 
 }
 
@@ -695,8 +695,7 @@ void gzParseFooter() {
     } else {
         printf(" done\n");
         printf("Image Size: %dMB.\n", ISIZE/1024/1024);
-        bootinfo->res[BI_RAMDISK].end =
-             bootinfo->res[BI_RAMDISK].base + ISIZE;
+        output_end = output_start + ISIZE;
     }
 
 }

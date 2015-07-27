@@ -1,8 +1,8 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 2.0.1.                               | |
- *        | |  -> Abstract disk management layer header.           | |
+ *        | |  Quafios Boot-Loader.                                | |
+ *        | |  -> filesystem abstraction layer.                    | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
@@ -26,17 +26,16 @@
  *
  */
 
-#ifndef STORAGE_DISK_H
-#define STORAGE_DISK_H
-
 #include <arch/type.h>
-#include <sys/device.h>
+#include <sys/bootinfo.h>
 
-typedef struct disk {
-    struct disk *next;
-    char *name;
-    device_t *dev;
-    int32_t partitioned;
-} disk_t;
+extern bootinfo_t *bootinfo;
 
-#endif
+void loadfile(char *path, uint32_t base) {
+    diskfs_loadfile(path, base);
+}
+
+void fs_init() {
+    diskfs_init();
+    diskfs_getuuid(bootinfo->uuid);
+}

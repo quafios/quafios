@@ -1,0 +1,6 @@
+*** Quafios Generic Boot Loader ***
+
+This program can be considered as the second stage of Quafios boot
+system. It is compiled as <loader.bin> and installed to /boot/loader.bin
+in Quafios system partition. The earlier stages of Quafios boot system
+chainload this bootloader from the medium/partition it is stored on.

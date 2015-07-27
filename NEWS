@@ -1,4 +1,11 @@
-A basic changelog.
+A basic changelog. For a detailed log, please check ChangeLog file.
+
+Changes in Quafios 2.0.1:
+    - Added device drivers for various hardware devices (Mouse/PCI/IDE/USB).
+    - Added MBR partition table support and installation on disks
+    - Implemented a basic GUI system.
+    - Implemented basic synchronization and message passing mechanisms.
+    - Completed the implementation of many un-implemented routines.
 
 Changes in Quafios 1.0.2:
     - Big changes in code style.

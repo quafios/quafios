@@ -34,9 +34,11 @@
 #include <sys/class.h>
 #include <sys/resource.h>
 #include <sys/device.h>
+#include <storage/disk.h>
 
-int32_t partprobe(int32_t devid) {
+int32_t partprobe(disk_t *disk) {
 
+    int32_t devid = disk->dev->devid;
     bus_t *diskbus;
     device_t *subdev;
     class_t cls;
@@ -52,6 +54,7 @@ int32_t partprobe(int32_t devid) {
 
     /* add partitions */
     if (has_mbr(dev)) {
+        disk->partitioned = 1;
         mbr_scan(dev);
     }
 

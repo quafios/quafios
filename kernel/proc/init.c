@@ -34,15 +34,12 @@
 #include <sys/fs.h>
 #include <arch/stack.h>
 
-uint32_t bootdisk = 0xFFFFFFFF; /* TODO: This is a temporary method
-                                 *       for boot-disk detection...
-                                 */
-
 void proc_init() {
 
     /* Process Manager Initialization */
     int32_t i, err = 0;
     char *initpath = "/bin/init";
+    int32_t bootdisk;
 
     /* (I) Initialize linked lists:  */
     /* ----------------------------- */
@@ -124,11 +121,22 @@ void proc_init() {
 
     /* (VI) Mount boot disk:  */
     /* ---------------------- */
+    /* detect bootdisk */
+    bootdisk = detect_bootdisk();
+    if (bootdisk < 0) {
+        printk("%aError: Couldn't detect boot medium.\n", 0x0C);
+        printk("Kernel halt.%a", 0x0F);
+        while(1);
+    }
+
     /* create a device file for bootdisk */
     mknod("/bootdisk", FT_SPECIAL, bootdisk);
 
     /* mount as diskfs filesystem */
     mount("/bootdisk", "/", "diskfs", 0, NULL);
+
+    /* chdir to the new root */
+    chdir("/");
 
     /* (VII) Execute "init" program to initialize the operating system:  */
     /* ---------------------------------------------------------------- */

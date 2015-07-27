@@ -29,6 +29,7 @@
 #include <arch/type.h>
 #include <sys/mm.h>
 #include <sys/fs.h>
+#include <sys/semaphore.h>
 #include <lib/linkedlist.h>
 
 #define IHASH_COUNT     0x40000
@@ -37,11 +38,14 @@ typedef _linkedlist(inode_t) ill; /* inode linked list. */
 
 ill *ihashtable[IHASH_COUNT]; /* hash table of inode. */
 
+static semaphore_t sem;
+
 void icache_init() {
     /* initalize the hash table */
     int32_t i;
     for (i = 0; i < IHASH_COUNT; i++)
         ihashtable[i] = NULL;
+    sema_init(&sem, 1);
 }
 
 int32_t hash(super_block_t *sb, ino_t ino) {
@@ -61,13 +65,18 @@ inode_t *iget(super_block_t *sb, ino_t ino) {
     int32_t h;
     inode_t *p;
 
+    /* enter region */
+    sema_down(&sem);
+
     /* get the hashing value */
     h = hash(sb, ino);
 
     if (ihashtable[h] == NULL) {
         /* allocate the linkedlist. */
-        if (!(ihashtable[h] = kmalloc(sizeof(ill))))
+        if (!(ihashtable[h] = kmalloc(sizeof(ill)))) {
+            sema_up(&sem);
             return NULL;
+        }
 
         /* initialize the linked list. */
         linkedlist_init(ihashtable[h]);
@@ -82,8 +91,10 @@ inode_t *iget(super_block_t *sb, ino_t ino) {
     if (!p) {
 
         /* allocate: */
-        if (!(p = kmalloc(sizeof(inode_t))))
+        if (!(p = kmalloc(sizeof(inode_t)))) {
+            sema_up(&sem);
             return NULL;
+        }
 
         /* add to the linked list */
         linkedlist_addlast(ihashtable[h], p);
@@ -110,6 +121,9 @@ inode_t *iget(super_block_t *sb, ino_t ino) {
     p->icount++;
     sb->icount++;
 
+    /* leave critical region */
+    sema_up(&sem);
+
     /* done: */
     return p;
 
@@ -119,6 +133,14 @@ void iput(inode_t *p) {
 
     int32_t h;
 
+    /* detect bugs */
+    if (!p) {
+        printk("BUG! iput put with p = NULL\n");
+    }
+
+    /* enter region */
+    sema_down(&sem);
+
     /* decrease the counters: */
     p->icount--;
     p->sb->icount--;
@@ -127,8 +149,10 @@ void iput(inode_t *p) {
     p->sb->fsdriver->put_inode(p);
 
     /* p is still used? */
-    if (p->icount)
+    if (p->icount) {
+        sema_up(&sem);
         return;
+    }
 
     /* get the hash value: */
     h = hash(p->sb, p->ino); /* get the hashing value */
@@ -144,5 +168,8 @@ void iput(inode_t *p) {
 
     /* unallocate the inode structure */
     kfree(p);
+
+    /* leave critical region */
+    sema_up(&sem);
 
 }

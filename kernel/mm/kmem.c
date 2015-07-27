@@ -89,6 +89,7 @@ static const int MultiplyDeBruijnBitPosition2[32] = {
 /* runtime data */
 int32_t kmem_initialized = 0;
 uint32_t kalloc_size = 0;
+semaphore_t ksem;
 
 /* ======================================================================== */
 /*                           Bitmap Operations                              */
@@ -279,6 +280,8 @@ freenode_t *get_hole(uint32_t i) {
     if (i > U) {
         /* size can't be more than 2^U */
         Regs regs = {0};
+        __asm__("mov ., %%eax":"=a"(regs.eip));
+        __asm__("mov %%ebp, %%eax":"=a"(regs.ebp));
         panic(&regs, "Kernel memory not enough!");
     }
     /* make sure size is not less than the minimum */
@@ -347,6 +350,9 @@ void *kmalloc(uint32_t size) {
     /* local vars */
     freenode_t *ptr;
 
+    /* enter region */
+    /*sema_down(&ksem);*/
+
     /* size must be a power of 2 */
     size = nextpow2(size);
 
@@ -360,6 +366,9 @@ void *kmalloc(uint32_t size) {
     /* increase counter */
     kalloc_size += size;
 
+    /* leave region */
+    /*sema_up(&ksem);*/
+
     /* return pointer to allocated area */
     return ptr;
 }
@@ -367,6 +376,9 @@ void *kmalloc(uint32_t size) {
 void kfree(void *ptr) {
     /* local vars */
     int32_t i;
+
+    /* enter region */
+    /*sema_down(&ksem);*/
 
     /* get size */
     i = get_node_level(ptr);
@@ -383,6 +395,9 @@ void kfree(void *ptr) {
 
     /* decrease counter */
     kalloc_size -= 1<<i;
+
+    /* leave region */
+    /*sema_up(&ksem);*/
 }
 
 /* ======================================================================== */
@@ -401,6 +416,9 @@ void kmem_init() {
     /* create root node */
     arch_vmpage_map(NULL, KERNEL_MEMORY_BASE, 0);
     linked_add(U, (freenode_t *)((uint32_t) KERNEL_MEMORY_BASE));
+
+    /* initialize semaphore */
+    sema_init(&ksem, 1);
 
     /* create bitmap structure */
     bitmap = (uint8_t *) kmalloc(BITMAP_SIZE);

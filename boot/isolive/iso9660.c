@@ -1,7 +1,7 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Boot-Loader.                                | |
+ *        | |  Quafios ISO-Live Bootstrap program.                 | |
  *        | |  -> CDFS driver.                                     | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
@@ -28,10 +28,14 @@
 
 #include <arch/type.h>
 
-uint8_t  buffer[2048];
-uint32_t *bi_PrimaryVolumeDescriptor = (uint32_t *) 0x7C08;
-uint8_t  *boot_type                  = (uint8_t  *) 0x7DF0;
-uint8_t  *drive_index                = (uint8_t  *) 0x7DF1;
+static uint8_t  buffer[2048];
+static uint32_t *bi_PrimaryVolumeDescriptor = (uint32_t *) 0x1008;
+
+uint8_t  *drivenum    = (uint8_t  *) 0x11F0;
+uint32_t *ramdiskoff  = (uint32_t *) 0x11F1;
+uint32_t *ramdisksize = (uint32_t *) 0x11F5;
+uint32_t *partstart   = (uint32_t *) 0x11F9;
+uint8_t  *fstype      = (uint8_t  *) 0x11FD;
 
 typedef struct {
     uint8_t  len;
@@ -52,10 +56,6 @@ typedef struct {
 
 int32_t cdread(uint32_t lba, uint16_t memAddr) {
 
-    /* boot type: 0x01 (EL-TORITO)
-     *            0x02 (debug/test)
-     */
-
     /* DAP structure */
     struct {
         uint8_t  size;
@@ -68,8 +68,9 @@ int32_t cdread(uint32_t lba, uint16_t memAddr) {
 
     int32_t error;
 
-    if (*boot_type == 0x02) {
-        uint8_t *src  = (uint8_t *) (lba*2048+0x2000000);
+    if (*drivenum == 0xFF) {
+        /* ramdisk */
+        uint8_t *src  = (uint8_t *) (lba*2048+*ramdiskoff);
         uint8_t *dest = (uint8_t *) ((int32_t) memAddr);
         int32_t i;
         /* printf("lba: %d, src: %x, dest: %x\n", lba, src, dest); */
@@ -77,7 +78,6 @@ int32_t cdread(uint32_t lba, uint16_t memAddr) {
             dest[i] = src[i];
         return 2048;
     }
-
 
     dap.size    = 0x10;
     dap.unused  = 0x00;
@@ -87,7 +87,7 @@ int32_t cdread(uint32_t lba, uint16_t memAddr) {
     dap.lba     = lba;
 
     __asm__("int $0x13":"=a"(error)
-                       :"S"(&dap), "a"(0x4200), "d"(*drive_index));
+                       :"S"(&dap), "a"(0x4200), "d"(*drivenum));
 
     if ((error >> 8) & 0xFF) {
         printf("READ ERROR!\n");

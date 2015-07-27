@@ -70,7 +70,6 @@ void scheduler() {
     /* enter critical region */
     status = arch_get_int_status();
     arch_disable_interrupts();
-    spinlock_acquire(&sched_lock);
 
     /* if task is blocked, release its lock_to_unlock if any */
     if (curproc->blocked && curproc->lock_to_unlock) {
@@ -85,7 +84,6 @@ void scheduler() {
     /* no ready processes? */
     if (!q_ready.count) {
         arch_set_int_status(status);
-        spinlock_release(&sched_lock);
         return;
     }
 
@@ -94,7 +92,6 @@ void scheduler() {
     curproc = ((pd_t *) DEQUEUE(q_ready))->proc;
 
     /* exit critical region */
-    spinlock_release(&sched_lock);
     arch_set_int_status(status);
 
     /* switch processes:  */
@@ -127,7 +124,6 @@ void unblock(int32_t pid) {
     /* enter critical region */
     status = arch_get_int_status();
     arch_disable_interrupts();
-    spinlock_acquire(&sched_lock);
 
     /* is blocked? */
     if (proc && proc->blocked) {
@@ -140,7 +136,6 @@ void unblock(int32_t pid) {
     }
 
     /* exit critical region */
-    spinlock_release(&sched_lock);
     arch_set_int_status(status);
 }
 

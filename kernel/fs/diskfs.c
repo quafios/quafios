@@ -72,7 +72,7 @@ super_block_t *diskfs_read_super(device_t *dev) {
     sb->disksb = disksb;
 
     /* read disksb: */
-    dev_read(sb->dev, (int64_t) 512, 512, (void *) sb->disksb);
+    dev_read(sb->dev, (int64_t) 1024, 512, (void *) sb->disksb);
 
     /* disk block size: */
     sb->blksize = disksb->block_size;
@@ -89,7 +89,7 @@ super_block_t *diskfs_read_super(device_t *dev) {
 int32_t diskfs_write_super(super_block_t *sb) {
 
     /* write 512 sector: */
-    dev_write(sb->dev, (int64_t) 512, 512, (void *) sb->disksb);
+    dev_write(sb->dev, (int64_t) 1024, 512, (void *) sb->disksb);
 
     /* done */
     return ESUCCESS;
@@ -121,7 +121,7 @@ int32_t diskfs_put_super(super_block_t *sb) {
 
 int32_t diskfs_read_cluster(super_block_t *sb, pos_t clus, void *buf) {
 
-    pos_t offset = 512 + clus*sb->blksize;
+    pos_t offset = 1024 + clus*sb->blksize;
     return dev_read(sb->dev, offset, sb->blksize, buf)/sb->blksize;
 
 }
@@ -132,7 +132,7 @@ int32_t diskfs_read_cluster(super_block_t *sb, pos_t clus, void *buf) {
 
 int32_t diskfs_write_cluster(super_block_t *sb, pos_t clus, void *buf) {
 
-    pos_t offset = 512 + clus*sb->blksize;
+    pos_t offset = 1024 + clus*sb->blksize;
     return dev_write(sb->dev, offset, sb->blksize, buf)/sb->blksize;
 
 }
@@ -404,6 +404,7 @@ diskfs_blk_t diskfs_bmap_alloc(super_block_t *sb) {
     int32_t bit_offset;
     int32_t byte;
     int32_t bit;
+    int32_t i;
 
     /* get disk superblock: */
     disksb = sb->disksb;
@@ -464,6 +465,13 @@ diskfs_blk_t diskfs_bmap_alloc(super_block_t *sb) {
 
     /* now update super block: */
     diskfs_write_super(sb);
+
+    /* zeroise buffer */
+    for (i = 0; i < sb->blksize; i++)
+        buf[i] = 0;
+
+    /* write the zeros to the allocated cluster */
+    diskfs_write_cluster(sb, blk, buf);
 
     /* free the buffer: */
     kfree(buf);

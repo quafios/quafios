@@ -942,7 +942,7 @@ uint32_t ide_ioctl(device_t *dev, uint32_t cmd, void *data) {
 }
 
 uint32_t ide_irq(device_t *dev, uint32_t irqn) {
-    int32_t state;
+    int32_t state, status;
     info_t *info = (info_t *) dev->drvreg;
     /* check if IRQ source is channel 0 */
     if (irqn == info->channels[0].irqnum && info->channels[0].is_active) {
@@ -950,7 +950,10 @@ uint32_t ide_irq(device_t *dev, uint32_t irqn) {
         state = read_status(info, 0);
         if ((state & STATUS_MASK_ERR) || (state & STATUS_MASK_DRQ)) {
             /* it is our irq */
+            status = arch_get_int_status();
+            arch_enable_interrupts();
             sema_up(&info->irqsema);
+            arch_set_int_status(status);
         }
     }
     /* check if IRQ source is channel 1 */
@@ -959,7 +962,10 @@ uint32_t ide_irq(device_t *dev, uint32_t irqn) {
         state = read_status(info, 1);
         if ((state & STATUS_MASK_ERR) || (state & STATUS_MASK_DRQ)) {
             /* it is our irq */
+            status = arch_get_int_status();
+            arch_enable_interrupts();
             sema_up(&info->irqsema);
+            arch_set_int_status(status);
         }
     }
     return ESUCCESS;

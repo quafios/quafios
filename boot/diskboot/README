@@ -1,0 +1,12 @@
+*** Boot Quafios from MBR-partitioned disk ***
+
+The MBR bootloader should be installed to the MBR sector of the partitioned
+disk. The disk shall contain Quafios in one of its primary partitions, and
+the primary partition should be set as bootable. The MBR searches for the
+bootable partition and boots from it by chainloading its VBR. The VBR
+loads /boot/loader.bin to memory and chainboots it.
+
+MBR takes as input the disk number in DL. If DL = 0xFF then disk is a ramdisk
+and EDI & EBP store the location of the ramdisk and image size respectively.
+VBR takes the same inputs, with an extra input in DS:SI that specifies the
+partition table entry.

@@ -29,9 +29,8 @@
 #include <arch/type.h>
 #include "fs/diskfs.h"
 
-#define DISK_BASE 0x1000000
-
-static uint8_t *buffer = (uint8_t *) 0x20000; /* temporary buffer... */
+diskfs_sb_t *sb = (diskfs_sb_t *) 0x1000;
+static uint8_t *buffer = (uint8_t *) 0x1200; /* temporary buffer... */
 
 int32_t strcmp(const char *str1, const char *str2) {
     uint32_t i = 0;
@@ -42,14 +41,8 @@ int32_t strcmp(const char *str1, const char *str2) {
 }
 
 void read_cluster(diskfs_sb_t *sb, diskfs_pos_t clus, void *dest) {
-
-    uint32_t base = DISK_BASE           /* image location */ +
-                    512                 /* boot sector    */ +
-                    clus*sb->block_size /* cluster offset */;
-    int32_t i;
-    for(i = 0; i < sb->block_size; i++)
-        ((uint8_t *)dest)[i] = ((uint8_t *) base)[i];
-
+    read_sectors((int32_t)((clus*sb->block_size/512)+2),
+                 (int32_t)sb->block_size/512,dest);
 }
 
 void read_inode(diskfs_sb_t *disksb, diskfs_inode_t *inode, diskfs_ino_t ino) {
@@ -150,22 +143,31 @@ diskfs_ino_t lookup(diskfs_sb_t *sb, diskfs_inode_t *inode, char *name) {
 
 }
 
-void diskfs_load(char *path, uint32_t base) {
+void diskfs_getuuid(char *uuid) {
+    int32_t i = 0;
+    /*printf("uuid: ");*/
+    for (i = 0; i < 17; i++) {
+        /*printf("%c%c", "0123456789ABCDEF"[(sb->uuid[i]>>4)&0xF],
+                       "0123456789ABCDEF"[(sb->uuid[i]>>0)&0xF]);*/
+        uuid[i] = sb->uuid[i];
+    }
+}
 
-    /* Get superblock */
-    diskfs_sb_t *sb = (diskfs_sb_t *)(DISK_BASE+512);
+void diskfs_loadfile(char *path, uint32_t base) {
 
-    /* Read Root Inode: */
+    /* counter */
+    int32_t i = 0, j = 0;
+
+    /* root inode: */
     diskfs_ino_t ino = DISKFS_ROOT_INO;
     diskfs_inode_t inode;
 
     /* loop on path components */
-    int32_t i = 0;
     while (path[i]) {
 
         /* Read name: */
         char name[32] = {0};
-        int32_t j = 0;
+        j = 0;
 
         while (path[i] == '/')
             i++; /* skip slash. */
@@ -189,8 +191,17 @@ void diskfs_load(char *path, uint32_t base) {
     /* load kernel */
     printf("Loading %s (inode %d) to 0x%x...", path, ino, base);
     read_inode(sb, &inode, ino);
-    for (i = 0; i < inode.blocks; i++)
-        read_file_block(sb,&inode,i,(void *)(base+i*sb->block_size));
+    for (i = 0; i < inode.blocks; i++) {
+        uint8_t *dest = (uint8_t *)(base+i*sb->block_size);
+        read_file_block(sb,&inode, i, buffer);
+        for (j = 0; j < sb->block_size; j++)
+            dest[j] = buffer[j];
+    }
     printf(" done\n");
 
+}
+
+void diskfs_init() {
+    /* get superblock */
+    read_sectors(2, 1, sb);
 }

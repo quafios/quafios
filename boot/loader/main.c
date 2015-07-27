@@ -1,8 +1,8 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 2.0.1.                               | |
- *        | |  -> Abstract disk management layer header.           | |
+ *        | |  Quafios Boot-Loader.                                | |
+ *        | |  -> main() procedure.                                | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
@@ -26,17 +26,52 @@
  *
  */
 
-#ifndef STORAGE_DISK_H
-#define STORAGE_DISK_H
+#include <sys/bootinfo.h>
 
-#include <arch/type.h>
-#include <sys/device.h>
+extern bootinfo_t *bootinfo;
 
-typedef struct disk {
-    struct disk *next;
-    char *name;
-    device_t *dev;
-    int32_t partitioned;
-} disk_t;
+int main() {
 
-#endif
+    /* enter unreal mode */
+    enter_unreal();
+
+    /* enable A20 Line */
+    enable_a20();
+
+    /* print splash */
+    printf("\nQuafios boot loader is starting...\n");
+
+    /* show menu */
+    show_menu();
+
+    /* clear screen */
+    cls();
+
+    /* initialize bootinfo */
+    bootinfo_init();
+
+    /* initialize bootdisk access layer */
+    bootdisk_init();
+
+    /* initialize filesystem */
+    fs_init();
+
+    /* load kernel to memory */
+    loadfile("/boot/kernel.bin", bootinfo->res[BI_KERNEL].base);
+
+    /* set VGA resolution */
+    set_resolution();
+
+    /* enter protected mode & execute kernel.bin */
+    go_protected(bootinfo->res[BI_KERNEL].base);
+
+    /* set video mode 0x03: */
+    video_mode(0x03);
+
+    /* kernel returned (this should never happen) */
+    printf("Quafios kernel main() returned!\n");
+
+    /* done */
+    return 0;
+
+}

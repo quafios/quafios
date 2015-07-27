@@ -89,13 +89,11 @@ uint32_t irq_reserve(uint32_t n, irq_reserve_t *reserve) {
     /* enter critical region */
     status = arch_get_int_status();
     arch_disable_interrupts();
-    sema_down(&irqsema);
 
     /* add the request to the tail of the queue: */
     linkedlist_addlast(&(irq[n].requeue), reserve);
 
     /* exit critical region */
-    sema_up(&irqsema);
     arch_set_int_status(status);
 
     /* done. */
@@ -113,7 +111,6 @@ void irq_handler(uint32_t n) {
     /* enter critical region */
     status = arch_get_int_status();
     arch_disable_interrupts();
-    sema_down(&irqsema);
 
     if (irq[n].requeue.count) {
         /* The IRQ is to be served (apply FIRST COME FIRST SERVED). */
@@ -130,7 +127,6 @@ void irq_handler(uint32_t n) {
     }
 
     /* exit critical region */
-    sema_up(&irqsema);
     arch_set_int_status(status);
 
     /* Send End of Interrupt Command: */

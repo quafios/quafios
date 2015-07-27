@@ -1,8 +1,8 @@
 /*
  *        +----------------------------------------------------------+
  *        | +------------------------------------------------------+ |
- *        | |  Quafios Kernel 2.0.1.                               | |
- *        | |  -> Abstract disk management layer header.           | |
+ *        | |  Quafios ISO-Live Bootstrap program.                 | |
+ *        | |  -> main() procedure.                                | |
  *        | +------------------------------------------------------+ |
  *        +----------------------------------------------------------+
  *
@@ -26,17 +26,24 @@
  *
  */
 
-#ifndef STORAGE_DISK_H
-#define STORAGE_DISK_H
+int main() {
 
-#include <arch/type.h>
-#include <sys/device.h>
+    /* enter unreal mode */
+    enter_unreal();
 
-typedef struct disk {
-    struct disk *next;
-    char *name;
-    device_t *dev;
-    int32_t partitioned;
-} disk_t;
+    /* enable A20 Line */
+    enable_a20();
 
-#endif
+    /* print splash */
+    printf("\nQuafios ISO-Live bootstrap stage.\n");
+
+    /* decompress the ram disk */
+    gunzip("RAMDISK.GZ");
+
+    /* chain load the boot sector of the ramdisk */
+    chainloader();
+
+    /* should never reach this line */
+    return 0;
+
+}

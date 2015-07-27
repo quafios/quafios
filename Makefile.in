@@ -811,19 +811,33 @@ install-exec-local:
 uninstall-local:
 	- rm -d ${prefix}
 
-isolive:
+setup:
+	make install prefix=`pwd`/disk
+	$(top_srcdir)/scripts/setup.sh
+
+diskimg:
 	make install prefix=`pwd`/disk
 	mkdir -p `pwd`/iso
 	dd if=/dev/zero of=disk.img bs=1M count=8 &> /dev/null
-	tools/mkdiskfs disk disk.img
-	gzip -c disk.img > iso/ramdisk.gz
-	cat disk/boot/cdboot disk/boot/loader.bin > iso/isoboot.bin
-	mkisofs -R -b isoboot.bin -boot-info-table \
+	echo -e "o\nn\np\n1\n2048\n\na\nw\n" | fdisk disk.img > /dev/null
+	dd if=boot/mbr.bin of=disk.img bs=446 count=1 conv=notrunc \
+	   &> /dev/null
+	tools/mkdiskfs disk disk.img $(shell uuidgen) 1048576
+	dd if=boot/vbr.bin of=disk.img bs=512 count=2 \
+	   seek=2048 conv=notrunc  &> /dev/null
+
+isolive: diskimg
+	gzip disk.img -c > iso/ramdisk.gz
+	cp boot/isolive.bin iso/isolive.bin
+	mkisofs -R -b isolive.bin -boot-info-table \
 		-boot-load-size 4 -no-emul-boot -graft-points \
 		-input-charset utf-8 -o quafios-2.0.1.iso iso/
 
-qemu: isolive
-	$(top_srcdir)/scripts/qemu.sh
+qemu-iso: isolive
+	$(top_srcdir)/scripts/qemu.sh d
+
+qemu-disk: diskimg
+	$(top_srcdir)/scripts/qemu.sh c
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

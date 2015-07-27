@@ -160,12 +160,12 @@ diskfs_blk_to_lvl(diskfs_sb_t *sb, diskfs_blk_t blk_off) {
     int32_t shift3 = 2*shift2;
 
     /* example, in case of block size = 4096:
-    * ptrs_per_block = 1024
-    * mask   = 0x3FF
-    * shift1 = 0
-    * shift2 = 10
-    * shift3 = 20
-    */
+     * ptrs_per_block = 1024
+     * mask   = 0x3FF
+     * shift1 = 0
+     * shift2 = 10
+     * shift3 = 20
+     */
 
     /* how many blocks in every level? */
     diskfs_blk_t level0_blocks = DISKFS_LVL0;

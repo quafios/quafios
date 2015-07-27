@@ -35,9 +35,6 @@ void bootinfo_init() {
 
     uint32_t cont = 0;
 
-    /* live */
-    bootinfo->live = 1;
-
     /* read memory layout: */
     bootinfo->mem_ents = 0;
 
@@ -78,8 +75,8 @@ void bootinfo_init() {
     bootinfo->res[BI_KERNEL].base     = 0x0100000;
     bootinfo->res[BI_KERNEL].end      = 0x0100000; /* temp value */
 
-    bootinfo->res[BI_RAMDISK].base    = 0x1000000;
-    bootinfo->res[BI_RAMDISK].end     = 0x1000000; /* temp value */
+    bootinfo->res[BI_RAMDISK].base    = 0x0000000;
+    bootinfo->res[BI_RAMDISK].end     = 0x0000000; /* temp value */
 
     bootinfo->res[BI_ARCH0].base      = 0x0000000;
     bootinfo->res[BI_ARCH0].end       = 0x0100000; /* lower 1MB. */
