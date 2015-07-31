@@ -3,6 +3,8 @@ include $(top_srcdir)/generic.am
 OBJECT_NAME   = coreutils
 OBJECT_PREFIX = $(BIN_DIR)
 LIBS          = -lc -lgcc
+TARGETS       = umount mount rmdir mkdir rm unlink link mknod dir ls \
+                cat cp reboot readsect
 DEPS          = $(ALLHFILES) Makefile \
                 $(KERNEL_INCLUDE) \
 		$(LIBC_INCLUDE) \
@@ -44,6 +46,12 @@ ls: ls.o
 cat: cat.o
 	$(CC) $(LFLAGS) -o $@ $< $(LIBS)
 
+cp: cp.o
+	$(CC) $(LFLAGS) -o $@ $< $(LIBS)
+
+reboot: reboot.o
+	$(CC) $(LFLAGS) -o $@ $< $(LIBS)
+
 readsect: readsect.o
 	$(CC) $(LFLAGS) -o $@ $< $(LIBS)
 
@@ -59,6 +67,8 @@ install-exec-local:
 	$(INSTALL) -D dir          $(OBJECT_PREFIX)/dir
 	$(INSTALL) -D ls           $(OBJECT_PREFIX)/ls
 	$(INSTALL) -D cat          $(OBJECT_PREFIX)/cat
+	$(INSTALL) -D cp           $(OBJECT_PREFIX)/cp
+	$(INSTALL) -D reboot       $(OBJECT_PREFIX)/reboot
 	$(INSTALL) -D readsect     $(OBJECT_PREFIX)/readsect
 	$(INSTALL) -D $(CSD)/free  $(OBJECT_PREFIX)/free
 	$(INSTALL) -D $(CSD)/lsdev $(OBJECT_PREFIX)/lsdev
@@ -75,13 +85,14 @@ uninstall-local:
 	rm -f $(OBJECT_PREFIX)/dir
 	rm -f $(OBJECT_PREFIX)/ls
 	rm -f $(OBJECT_PREFIX)/cat
+	rm -f $(OBJECT_PREFIX)/cp
+	rm -f $(OBJECT_PREFIX)/reboot
 	rm -f $(OBJECT_PREFIX)/readsect
 	rm -f $(OBJECT_PREFIX)/free
 	rm -f $(OBJECT_PREFIX)/lsdev
 	- $(call REMOVE_EMPTY_DIR, $(prefix))
 
-all-local: umount mount rmdir mkdir rm unlink link mknod dir ls cat readsect
+all-local: $(TARGETS)
 
 clean-local:
-	rm -f $(OBJ) umount mount rmdir mkdir rm unlink link mknod dir ls \
-	      cat readsect
+	rm -f $(OBJ) $(TARGETS)

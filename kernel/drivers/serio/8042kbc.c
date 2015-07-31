@@ -248,6 +248,7 @@ static uint32_t atkbc_init(info_t *info) {
     uint32_t    channel0_supported = 1;
     uint32_t    channel1_supported = 1;
     uint8_t     conf;
+    uint8_t     rdata;
 
     /* again, i love the user when he looks like "HerpDerp" while
      * these messages are popping up his screen.
@@ -259,7 +260,10 @@ static uint32_t atkbc_init(info_t *info) {
     command(info, DISABLE_PS2_PORT2);
 
     /* some data might be waiting at the data port, read it. */
-    while(data_read(info) != 0xFFFF);
+    while (status(info) & STATUS_OBF) {
+        rdata = data_read(info);
+        /*printk("read something! %x\n", rdata);*/
+    }
 
     /* Set the configuration byte: */
     command(info, READ_RAM_BYTE00);

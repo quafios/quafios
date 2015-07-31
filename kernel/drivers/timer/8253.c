@@ -308,7 +308,7 @@ uint32_t i8253_irq(device_t *dev, uint32_t irqn) {
             ptr = next;
         }
     }
-    
+
     /* i sometimes enjoy watching this: */
 #if 0
     tt = (uint32_t) info->clock[i].ticks;

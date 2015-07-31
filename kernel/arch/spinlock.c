@@ -52,12 +52,12 @@ void spinlock_acquire(spinlock_t *spinlock) {
      * instruction described in Stallings (5.2, 7th edition) with
      * *word = *spinlock, testval = 0, and newval = 1.
      */
-    if (scheduler_enabled && !(get_eflags() & 0x200)) {
+    /*if (scheduler_enabled && !(get_eflags() & 0x200)) {
         Regs regs = {0};
         __asm__("mov ., %%eax":"=a"(regs.eip));
         __asm__("mov %%ebp, %%eax":"=a"(regs.ebp));
         panic(&regs, "Error: spinlock_acquire() from interrupt context!");
-    }
+    }*/
 
     __asm__("1: lock bts $0, (%%esi);\n"
             "   jc       1b         ;\n"::"S"(spinlock));

@@ -37,8 +37,10 @@
 #include <sys/scheduler.h>
 #include <sys/bootinfo.h>
 #include <arch/page.h>
-#include <video/generic.h>
 #include <i386/asm.h>
+#include <timer/8253.h>
+#include <pic/8259A.h>
+#include <video/generic.h>
 
 /* Prototypes: */
 uint32_t ibmpc_probe(device_t *, void *);
@@ -471,6 +473,8 @@ uint32_t ibmpc_probe(device_t* dev, void* config) {
     class_t cls;
     reslist_t reslist = {0, NULL};
     resource_t *resv;
+    i8259_init_t pic1_config, pic2_config;
+    i8253_init_t timer_config;
 
     /* Inform the user of our progress: */
     printk("Quafios is running on an IBM PC/AT Compatible Machine.\n");
@@ -482,19 +486,142 @@ uint32_t ibmpc_probe(device_t* dev, void* config) {
      *         | | |
      *   Mem---+ | +---VTTY
      *           |
-     *          Host
-     *          |  |
-     *     ISA--+  +---PCI
+     *       Host Machine
+     *         | | |
+     *  8259---+ | +---PCI
+     *           |
+     *          8253
+     *
      */
 
-    /* Add the "ISA" controller device driver: */
-    cls.bus    = BUS_HOST;
-    cls.base   = BASE_HOST_SUBSYSTEM;
-    cls.sub    = SUB_HOST_SUBSYSTEM_ISA;
+    /* I) Intel's 8259A PIC:
+     * ----------------------
+     * The default interrupt controller used in the original
+     * IBM personal computer.
+     * In IBM PC/AT, they were actually two PICs, one was master
+     * and the other was slave.
+     */
+    /* class of the PIC device: */
+    cls.bus    = BUS_ISA;
+    cls.base   = BASE_ISA_INTEL;
+    cls.sub    = SUB_ISA_INTEL_8259A;
     cls.progif = IF_ANY;
+    /* resources of the master pic: */
+    resv = (resource_t *) kmalloc(sizeof(resource_t)*1);
+    if (resv == NULL) return ENOMEM;
+    resv[0].type = RESOURCE_TYPE_PORT;
+    resv[0].data.port.base = 0x20; /* standard. */
+    resv[0].data.port.size = 2;    /* 2 bytes. */
+    /* resource list: */
+    reslist.count = 1;
+    reslist.list  = resv;
+    /* config structure: */
+    pic1_config.baseirq   = 0;
+    pic1_config.cascade   = CASCADE_MASTER;
+    pic1_config.casirq    = 2;
+    pic1_config.master    = NULL;
+    pic1_config.irqenable = 0;
+    /* now add pic1: */
+    dev_add(&t, hostbus, cls, reslist, &pic1_config);
+
+    /* resources of secondary pic: */
+    resv = (resource_t *) kmalloc(sizeof(resource_t)*1);
+    if (resv == NULL) return ENOMEM;
+    resv[0].type = RESOURCE_TYPE_PORT;
+    resv[0].data.port.base = 0xA0; /* standard. */
+    resv[0].data.port.size = 2;    /* 2 bytes.  */
+    /* resource list: */
+    reslist.count = 1;
+    reslist.list  = resv;
+    /* config: */
+    pic2_config.baseirq   = 8;
+    pic2_config.cascade   = CASCADE_SLAVE;
+    pic2_config.casirq    = 2;
+    pic2_config.master    = t;
+    pic2_config.irqenable = 1;
+    /* now add pic2: */
+    dev_add(&t, hostbus, cls, reslist, &pic2_config);
+
+    /* II) Intel's 8253 Timer:
+     * ------------------------
+     * The default programmable interval timer used in the original
+     * IBM personal computer.
+     * We are gonna use it to execute the scheduler each specific
+     * interval of time.
+     */
+    /* class for the 8253 chip: */
+    cls.bus    = BUS_ISA;
+    cls.base   = BASE_ISA_INTEL;
+    cls.sub    = SUB_ISA_INTEL_8253;
+    cls.progif = IF_ANY;
+    /* resources: */
+    resv = (resource_t *) kmalloc(sizeof(resource_t)*2);
+    if (resv == NULL) return ENOMEM;
+    resv[0].type = RESOURCE_TYPE_PORT;
+    resv[0].data.port.base = 0x40; /* standard. */
+    resv[0].data.port.size = 4;    /* 4 bytes. */
+    resv[1].type = RESOURCE_TYPE_IRQ;
+    resv[1].data.irq.number = 0;   /* 8253 is connected to IRQ0 line. */
+    /* resource list: */
+    reslist.count = 2;
+    reslist.list  = resv;
+    /* config:
+     * i8253 contains 3 clocks, they are used in IBM PC as follows:
+     * CLK 0 -> connected to IRQ0.
+     * CLK 1 -> almost not used
+     * CLK 2 -> connected to PC speaker.
+     * The oscillator of i8253 runs at a frequency of
+     * 1.193181666666 MHz (666666 is recurring) in IBM PC.
+     * We will make use of it to generate IRQ0 each 10ms, so that
+     * Quafios task scheduler is called every 10ms.
+     * According to physics:
+     * T = 1 / f; < periodic time >
+     * counter = required_interval / T
+     * therefore: counter = required_interval * f
+     *                    = 0.01 * 1193181 = 11931
+     */
+    timer_config.clock[0].count = 1193181 * SCHEDULER_INTERVAL;
+    timer_config.clock[0].mode  = 3;     /* CLK 0 should operate in mode 3. */
+    timer_config.clock[0].catch_irq = 1; /* catch. */
+
+    timer_config.clock[1].count = 0;     /* ignore it. */
+    timer_config.clock[1].mode  = 0;     /* ignored. */
+    timer_config.clock[1].catch_irq = 0; /* no irq. */
+
+    timer_config.clock[2].count = 0;     /* ignore it. */
+    timer_config.clock[2].mode  = 0;     /* ignored. */
+    timer_config.clock[2].catch_irq = 0; /* ignored. */
+
+    /* now add the timer: */
+    dev_add(&t, hostbus, cls, reslist, &timer_config);
+
+    /* configure the scheduler: */
+    scheduler_irq = 0; /* IRQ0. */
+
+    /* III) Video Graphics Array (VGA):
+     * ---------------------------------
+     * VGA is a piece of hardware that's responsible for
+     * adapting graphics on screen.
+     */
+    cls.bus    = BUS_ISA;
+    cls.base   = BASE_ISA_IBM;
+    cls.sub    = SUB_ISA_IBM_VGA;
+    cls.progif = IF_ANY;
+    /* resources: */
+    resv = (resource_t *) kmalloc(sizeof(resource_t)*4);
+    if (resv == NULL) return ENOMEM;
+    resv[0].type = RESOURCE_TYPE_PORT;
+    resv[0].data.port.base = 0x0;
+    resv[0].data.port.size = 1;
+    /* resource list: */
+    reslist.count = 4;
+    reslist.list  = resv;
+    /* now add the VGA: */
     dev_add(&t, hostbus, cls, reslist, NULL);
 
-    /* Add the "PCI" controller device driver: */
+    /* IV) PCI System:
+     * ----------------
+     */
     cls.bus    = BUS_HOST;
     cls.base   = BASE_HOST_SUBSYSTEM;
     cls.sub    = SUB_HOST_SUBSYSTEM_PCI;

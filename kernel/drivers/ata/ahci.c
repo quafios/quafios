@@ -86,12 +86,12 @@ uint32_t ahci_probe(device_t *dev, void *config) {
         return ENOMEM; /* i am sorry :D */
 
     /* debug info */
-    for (i = 0; i < dev->resources.count; i++) {
+    /* for (i = 0; i < dev->resources.count; i++) {
         printk("type: %d, base: %x\n", dev->resources.list[i]);
-    }
+    }*/
 
     /* print message */
-    printk("AHCI initialization.\n");
+    /*printk("AHCI initialization.\n");*/
 
     /* done */
     return ESUCCESS;

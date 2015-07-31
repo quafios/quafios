@@ -161,6 +161,22 @@ static uint8_t read_scancode(info_t *info) {
     return ret;
 }
 
+static void reset_keyboard(device_t *dev) {
+    /* Send 0xFF to the keyboard */
+    uint8_t cmd = 0xFF, ret[2];
+    atkbc_sendrec_t data;
+    data.channel = 0;    /* first PS/2 port     */
+    data.send    = 1;    /* send command.       */
+    data.sbuff   = &cmd; /* command buffer      */
+    data.receive = 2;    /* I expect two bytes  */
+    data.rbuff   = ret;  /* receive buffer      */
+    dev_ioctl(dev->parent_bus->ctl, i8042_ATKBC_SENDREC, &data);
+    /*printk("received: %x\n", ret[0]);
+    printk("received: %x\n", ret[1]);*/
+    return;
+}
+
+
 static void update_leds(info_t *info) {
     uint8_t buff[2];
     atkbc_sendrec_t data;
@@ -441,15 +457,18 @@ uint32_t ps2kbd_probe(device_t *dev, void *config) {
      */
     printk("PS/2 Keyboard driver is initializing...\n");
 
+    /* flush buffer */
+    read_scancode(info);
+
+    /* reset the keyboard: */
+    reset_keyboard(dev);
+
     /* catch the IRQs: */
     reserve = kmalloc(sizeof(irq_reserve_t));
     reserve->dev     = dev;
     reserve->expires = 0;
     reserve->data    = NULL;
     irq_reserve(dev->resources.list[0].data.irq.number, reserve);
-
-    /* make sure le buffer is clear (v. important): */
-    read_scancode(info);
 
     /* update leds: */
     update_leds(info);

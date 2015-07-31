@@ -72,7 +72,7 @@ void bootdisk_init() {
         bootinfo->live = 1;
         /* store ramdisk info in bootinfo structure */
         bootinfo->res[BI_RAMDISK].base = *ramdiskoff;
-        bootinfo->res[BI_RAMDISK].end  = *ramdisksize;
+        bootinfo->res[BI_RAMDISK].end  = *ramdiskoff+*ramdisksize;
     } else {
         /* no ramdisk */
         bootinfo->live = 0;
