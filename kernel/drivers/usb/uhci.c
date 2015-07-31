@@ -501,6 +501,7 @@ int32_t uhci_transfer(info_t *info, int32_t count, transaction_t *trans) {
 uint32_t uhci_probe(device_t *dev, void *config) {
 
     resource_t *list = dev->resources.list;
+    pci_config_t *pci_config = (pci_config_t *) config;
     int i;
 
     /* create info_t structure: */
@@ -512,6 +513,9 @@ uint32_t uhci_probe(device_t *dev, void *config) {
     /* inform user of our progress */
     printk("%aUSB%a: ", 0x0A, 0x0F);
     printk("Universal host controller interface (UHCI) on PCI.\n");
+
+    /* disable USB legacy support and initialize companion EHCI controllers */
+    ehci_init_companion(pci_config->bus, pci_config->devno, pci_config->func);
 
     /* store data in info structure */
     info->dev = dev;

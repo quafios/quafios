@@ -92,8 +92,10 @@ uint32_t usbhub_probe(device_t *dev, void *config) {
         return ENOMEM; /* i am sorry :D */
 
     /* inform the user of our progress */
+#if 0
     printk("%aUSB%a: ", 0x0A, 0x0F);
     printk("Hub added with address %d.\n", usbdev->addr);
+#endif
 
     /* create hub bus */
     dev_mkbus(&usbbus, BUS_USB, dev);

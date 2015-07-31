@@ -72,6 +72,7 @@ extern driver_t ide_driver;
 extern driver_t atadisk_driver;
 extern driver_t ahci_driver;
 extern driver_t uhci_driver;
+extern driver_t ehci_driver;
 extern driver_t usbhub_driver;
 extern driver_t usbmass_driver;
 extern driver_t scsidisk_driver;

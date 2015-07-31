@@ -58,6 +58,7 @@ driver_t *drivers[] = {
     &atadisk_driver,
     &ahci_driver,
     &uhci_driver,
+    &ehci_driver,
     &usbhub_driver,
     &usbmass_driver,
     &scsidisk_driver,

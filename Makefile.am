@@ -49,7 +49,7 @@ isolive: diskimg
 		-input-charset utf-8 -o quafios-2.0.1.iso iso/
 
 qemu-iso: isolive
-	$(top_srcdir)/scripts/qemu.sh d
+	srcdir=$(top_srcdir) $(top_srcdir)/scripts/qemu.sh d
 
 qemu-disk: diskimg
-	$(top_srcdir)/scripts/qemu.sh c
+	srcdir=$(top_srcdir) $(top_srcdir)/scripts/qemu.sh c
