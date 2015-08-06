@@ -108,7 +108,7 @@ uint32_t usbhub_probe(device_t *dev, void *config) {
                     HUB_DESCRIPTOR<<8, /* value */
                     0x00,              /* index */
                     buf,
-                    100,
+                    9,
                     2000);
 
     /* store information in info structure */
@@ -116,7 +116,18 @@ uint32_t usbhub_probe(device_t *dev, void *config) {
     info->port_count = hubdesc->bNbrPorts;
 
     /* get info about connectivity of the ports */
-    for (i = 0; i < info->port_count; i++) {
+    for (i = 1; i <= info->port_count; i++) {
+        /* set port feature (power) */
+        usb_control_msg(usbdev,
+                        0,
+                        SET_FEATURE,       /* request */
+                        0x23,              /* request type */
+                        PORT_POWER,        /* value */
+                        i,                 /* port index */
+                        NULL,
+                        0,
+                        2000);
+
         /* get port status */
         usb_control_msg(usbdev,
                         0,
@@ -127,8 +138,9 @@ uint32_t usbhub_probe(device_t *dev, void *config) {
                         buf,
                         4,
                         2000);
+
         /* port connected? */
-        if (change->c_port_connection) {
+        if (status->port_connection /* change->c_port_connection*/) {
             /* clear c_port_connection */
             usb_control_msg(usbdev,
                             0,
@@ -144,7 +156,7 @@ uint32_t usbhub_probe(device_t *dev, void *config) {
                 /* there is a device connected to this port,
                 * add it to the system!
                 */
-                usb_enum_bus(usbif, i, status->port_low_speed);
+                usb_enum_bus(usbif, i);
             } else {
                 /* device disconnected */
             }

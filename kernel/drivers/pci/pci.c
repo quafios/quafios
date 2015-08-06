@@ -68,37 +68,6 @@ driver_t pci_driver = {
 #define PCI_PORT_INDEX          0 /* Index Port */
 #define PCI_PORT_DATA           4 /* Data Port  */
 
-/* configuration space registers */
-#define PCI_REG_VENDOR_ID       0x00
-#define PCI_REG_DEVICE_ID       0x02
-#define PCI_REG_COMMAND         0x04
-#define PCI_REG_STATUS          0x06
-#define PCI_REG_REVISION_ID     0x08
-#define PCI_REG_PROG_IF         0x09
-#define PCI_REG_SUBCLASS        0x0A
-#define PCI_REG_CLASS           0x0B
-#define PCI_REG_CACHE_LINE_SIZE 0x0C
-#define PCI_REG_LATENCY_TIMER   0x0D
-#define PCI_REG_HEADER_TYPE     0x0E
-#define PCI_REG_BIST            0x0F
-#define PCI_REG_BASE_ADDRESS_0  0x10
-#define PCI_REG_BASE_ADDRESS_1  0x14
-#define PCI_REG_BASE_ADDRESS_2  0x18
-#define PCI_REG_BASE_ADDRESS_3  0x1C
-#define PCI_REG_BASE_ADDRESS_4  0x20
-#define PCI_REG_BASE_ADDRESS_5  0x24
-#define PCI_REG_CARDBUS_CIS_PTR 0x28
-#define PCI_REG_SUBSYS_VENDOR   0x2C
-#define PCI_REG_SUBSYS_ID       0x2E
-#define PCI_REG_EXPANSION_ROM   0x30
-#define PCI_REG_CAP_PTR         0x34
-#define PCI_REG_RESERVED_1      0x35
-#define PCI_REG_RESERVED_4      0x38
-#define PCI_REG_INTERRUPT_LINE  0x3C
-#define PCI_REG_INTERRUPT_PIN   0x3D
-#define PCI_REG_MIN_GRANT       0x3E
-#define PCI_REG_MAX_LATENCY     0x3F
-
 static uint32_t port_read(device_t *dev, uint32_t port) {
     uint32_t base = dev->resources.list[0].data.port.base;
     uint32_t type = dev->resources.list[0].type;
@@ -125,35 +94,45 @@ static uint32_t get_index(uint32_t bus,
     return (1<<31)|((bus&255)<<16)|((devno&31)<<11)|((func&7)<<8)|(reg&255);
 }
 
-static uint8_t read_conf8(device_t* dev,
-                         uint32_t bus,
-                         uint32_t devno,
-                         uint32_t func,
-                         uint32_t reg) {
+uint8_t read_conf8(device_t* dev,
+                   uint32_t bus,
+                   uint32_t devno,
+                   uint32_t func,
+                   uint32_t reg) {
     uint32_t dword;
     port_write(dev, PCI_PORT_INDEX, get_index(bus, devno, func, reg&0xFC));
     dword = port_read(dev, PCI_PORT_DATA);
     return ((uint8_t *) &dword)[reg & 3];
 }
 
-static uint16_t read_conf16(device_t* dev,
-                            uint32_t bus,
-                            uint32_t devno,
-                            uint32_t func,
-                            uint32_t reg) {
+uint16_t read_conf16(device_t* dev,
+                     uint32_t bus,
+                     uint32_t devno,
+                     uint32_t func,
+                     uint32_t reg) {
     return (read_conf8(dev, bus, devno, func, reg+0)<<0)|
            (read_conf8(dev, bus, devno, func, reg+1)<<8);
 }
 
-static uint32_t read_conf32(device_t* dev,
-                            uint32_t bus,
-                            uint32_t devno,
-                            uint32_t func,
-                            uint32_t reg) {
+uint32_t read_conf32(device_t* dev,
+                     uint32_t bus,
+                     uint32_t devno,
+                     uint32_t func,
+                     uint32_t reg) {
     return (read_conf8(dev, bus, devno, func, reg+0)<< 0)|
            (read_conf8(dev, bus, devno, func, reg+1)<< 8)|
            (read_conf8(dev, bus, devno, func, reg+2)<<16)|
            (read_conf8(dev, bus, devno, func, reg+3)<<24);
+}
+
+uint32_t write_conf32(device_t* dev,
+                      uint32_t bus,
+                      uint32_t devno,
+                      uint32_t func,
+                      uint32_t reg,
+                      uint32_t val) {
+    port_write(dev, PCI_PORT_INDEX, get_index(bus, devno, func, reg&0xFC));
+    port_write(dev, PCI_PORT_DATA, val);
 }
 
 /* ================================================================= */

@@ -125,8 +125,38 @@ static int32_t issue_transfer(info_t *info, int32_t lun, uint8_t *cdb,
     retval = usb_bulk_msg(info->usbdev,
                           is_write ? out_pipe : in_pipe,
                           data, data_len, &actlen, 2000);
-    if (retval)
-        return -retval;
+    if (retval) {
+        /* clear stall condition */
+        retval = usb_control_msg(info->usbdev, 0, CLEAR_FEATURE, 0x02,
+                                 ENDPOINT_HALT,
+                                 is_write ? out_pipe : in_pipe,
+                                 NULL, 0, 2000);
+        info->usbdev->endpt_toggle[(is_write?out_pipe:in_pipe)&15] = 0;
+
+        /* read status */
+        retval = usb_bulk_msg(info->usbdev, in_pipe, &csw, 13, &actlen, 2000);
+        if (retval)
+            return -retval;
+
+        /* retry */
+        retval = usb_bulk_msg(info->usbdev, out_pipe, &cbw, 31, &actlen, 2000);
+        if (retval)
+            return -retval;
+
+        /* read data */
+        retval = usb_bulk_msg(info->usbdev,
+                              is_write ? out_pipe : in_pipe,
+                              data, data_len, &actlen, 2000);
+        if (retval)
+            return -retval;
+    }
+
+# if 0
+    for (i = 0; i < data_len; i++) {
+        printk("%c", data[i]);
+    }
+    printk("\n");
+#endif
 
     /* get csw */
     retval = usb_bulk_msg(info->usbdev, in_pipe, &csw, 13, &actlen, 2000);
@@ -173,6 +203,7 @@ uint32_t usbmass_probe(device_t *dev, void *config) {
                              info->usbif->if_num, &max_lun, 1, 2000);
     if (retval < 0) {
         printk("%aUSB Mass Storage Error: reset failed.%a\n", 0x0C, 0x0F);
+        while(1);
         return retval;
     }
 

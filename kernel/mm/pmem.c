@@ -52,7 +52,22 @@ extern bootinfo_t *bootinfo;
 uint8_t physical_page[PAGE_SIZE] __attribute__((aligned(PAGE_SIZE)));
 uint32_t cur_physical_page = NULL;
 
-/* Access physical memory routine */
+/* physical memory access routines */
+
+uint32_t to_phys(uint32_t addr) {
+    uint32_t physpage;
+    /* touch page */
+    physpage = *((char *) addr);
+    /* now get address */
+    physpage = arch_vmpage_getAddr(NULL,(uint32_t)addr);
+    /* physpage should be nonzero */
+    if (!physpage) {
+        printk("OMG, to_phys() with an unallocated page!\n");
+        while(1);
+    }
+    /* return physical address */
+    return physpage + (((uint32_t)addr)&0xFFF);
+}
 
 uint8_t pmem_readb(void *p_addr) {
     /* p_addr: physical memory address which is to be accessed. */

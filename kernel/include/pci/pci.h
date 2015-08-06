@@ -32,6 +32,38 @@
 #include <arch/type.h>
 #include <sys/device.h>
 
+/* configuration space registers */
+#define PCI_REG_VENDOR_ID       0x00
+#define PCI_REG_DEVICE_ID       0x02
+#define PCI_REG_COMMAND         0x04
+#define PCI_REG_STATUS          0x06
+#define PCI_REG_REVISION_ID     0x08
+#define PCI_REG_PROG_IF         0x09
+#define PCI_REG_SUBCLASS        0x0A
+#define PCI_REG_CLASS           0x0B
+#define PCI_REG_CACHE_LINE_SIZE 0x0C
+#define PCI_REG_LATENCY_TIMER   0x0D
+#define PCI_REG_HEADER_TYPE     0x0E
+#define PCI_REG_BIST            0x0F
+#define PCI_REG_BASE_ADDRESS_0  0x10
+#define PCI_REG_BASE_ADDRESS_1  0x14
+#define PCI_REG_BASE_ADDRESS_2  0x18
+#define PCI_REG_BASE_ADDRESS_3  0x1C
+#define PCI_REG_BASE_ADDRESS_4  0x20
+#define PCI_REG_BASE_ADDRESS_5  0x24
+#define PCI_REG_CARDBUS_CIS_PTR 0x28
+#define PCI_REG_SUBSYS_VENDOR   0x2C
+#define PCI_REG_SUBSYS_ID       0x2E
+#define PCI_REG_EXPANSION_ROM   0x30
+#define PCI_REG_CAP_PTR         0x34
+#define PCI_REG_RESERVED_1      0x35
+#define PCI_REG_RESERVED_4      0x38
+#define PCI_REG_INTERRUPT_LINE  0x3C
+#define PCI_REG_INTERRUPT_PIN   0x3D
+#define PCI_REG_MIN_GRANT       0x3E
+#define PCI_REG_MAX_LATENCY     0x3F
+
+/* config structure */
 typedef struct {
     uint16_t vendor_id;
     uint16_t device_id;

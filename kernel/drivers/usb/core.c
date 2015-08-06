@@ -41,6 +41,49 @@
 #include <usb/hub.h>
 
 /* ================================================================= */
+/*                         Classification                            */
+/* ================================================================= */
+
+typedef struct usb_class {
+    uint8_t base;
+    char *name;
+} usb_class_t;
+
+usb_class_t usb_classes[] = {
+    {0x00,"USB Composite Device"},
+    {0x01,"USB Audio Device"},
+    {0x02,"USB Communications Device"},
+    {0x03,"USB HID Device"},
+    {0x05,"USB Physical Device"},
+    {0x06,"USB Image Device"},
+    {0x07,"USB Printer Device"},
+    {0x08,"USB Mass Storage Device"},
+    {0x09,"USB Hub"},
+    {0x0A,"USB CDC-Data Device"},
+    {0x0B,"USB Smart Card"},
+    {0x0D,"USB Content Security Device"},
+    {0x0E,"USB Video Device"},
+    {0x0F,"USB Personal Healthcare Device"},
+    {0x10,"USB Audio/Video Device"},
+    {0x11,"USB Billboard Device"},
+    {0xDC,"USB Diagnostic Device"},
+    {0xE0,"USB Wireless Controller"},
+    {0xEF,"USB Miscellaneous Device"},
+    {0xFE,"USB Application-Specific Device"},
+    {0xFF,"USB Vendor-Specific Device"}
+};
+
+static char *usb_base_to_name(uint8_t base) {
+    int32_t i;
+    for (i = 0; i < sizeof(usb_classes)/sizeof(usb_classes[0]); i++) {
+        if (base == usb_classes[i].base) {
+            return usb_classes[i].name;
+        }
+    }
+    return "USB Unknown Device";
+}
+
+/* ================================================================= */
 /*                           HCI control                             */
 /* ================================================================= */
 
@@ -162,42 +205,51 @@ int32_t usb_control_msg(usb_device_t *dev,
     trans = kmalloc(sizeof(transaction_t)*(no_of_data_packets+2));
 
     /* setup transaction */
-    trans[0].tokpid   = PID_SETUP;
-    trans[0].addr     = dev->addr;
-    trans[0].endpoint = pipe;
-    trans[0].datapid  = PID_DATA0;
-    trans[0].databuf  = setup_data;
-    trans[0].pktsize  = 8;
-    trans[0].lowspeed = dev->lowspeed;
-    trans[0].calc     = 0;
+    trans[0].tokpid    = PID_SETUP;
+    trans[0].addr      = dev->addr;
+    trans[0].endpoint  = pipe;
+    trans[0].datapid   = PID_DATA0;
+    trans[0].databuf   = setup_data;
+    trans[0].pktsize   = 8;
+    trans[0].lowspeed  = dev->lowspeed;
+    trans[0].highspeed = dev->highspeed;
+    trans[0].maxpacket = packet_size;
+    trans[0].usbdev    = dev;
+    trans[0].calc      = 0;
 
     /* data transactions */
     for (i = 1; i <= no_of_data_packets; i++) {
-        trans[i].tokpid   = direction ? PID_IN : PID_OUT;
-        trans[i].addr     = dev->addr;
-        trans[i].endpoint = pipe;
-        trans[i].datapid  = i%2 ? PID_DATA1 : PID_DATA0;
-        trans[i].databuf  = &((char *)data)[(i-1)*packet_size];
+        trans[i].tokpid    = direction ? PID_IN : PID_OUT;
+        trans[i].addr      = dev->addr;
+        trans[i].endpoint  = pipe;
+        trans[i].datapid   = i%2 ? PID_DATA1 : PID_DATA0;
+        trans[i].databuf   = &((char *)data)[(i-1)*packet_size];
         if (size < packet_size) {
-            trans[i].pktsize  = size;
+            trans[i].pktsize   = size;
             size = 0;
         } else {
-            trans[i].pktsize  = packet_size;
+            trans[i].pktsize   = packet_size;
             size -= packet_size;
         }
-        trans[i].lowspeed = dev->lowspeed;
-        trans[i].calc     = 1;
+        trans[i].lowspeed  = dev->lowspeed;
+        trans[i].highspeed = dev->highspeed;
+        trans[i].maxpacket = packet_size;
+        trans[i].usbdev    = dev;
+        trans[i].calc      = 1;
     }
 
     /* status transaction */
-    trans[i].tokpid   = direction ? PID_OUT : PID_IN;
-    trans[i].addr     = dev->addr;
-    trans[i].endpoint = pipe;
-    trans[i].datapid  = PID_DATA1;
-    trans[i].databuf  = status_data;
-    trans[i].pktsize  = 2;
-    trans[i].lowspeed = dev->lowspeed;
-    trans[i].calc     = 0;
+    trans[i].tokpid    = direction ? PID_OUT : PID_IN;
+    trans[i].addr      = dev->addr;
+    trans[i].endpoint  = pipe;
+    trans[i].datapid   = PID_DATA1;
+    trans[i].databuf   = status_data;
+    trans[i].pktsize   = 0;
+    trans[i].lowspeed  = dev->lowspeed;
+    trans[i].highspeed = dev->highspeed;
+    trans[i].maxpacket = packet_size;
+    trans[i].usbdev    = dev;
+    trans[i].calc      = 0;
 
     /* now let the HCI handle the transfer */
     retval = dev_ioctl(dev->hci->dev, no_of_data_packets+2, trans);
@@ -215,7 +267,7 @@ int32_t usb_bulk_msg(usb_device_t *usb_dev,
                      int32_t       len,
                      int32_t      *actual_length,
                      int32_t       timeout) {
-    int32_t endpoint;
+    int32_t endpt;
     int32_t direction; /* 1: read from device (IN), 0: write (OUT) */
     int32_t packet_size;
     int32_t no_of_data_packets;
@@ -224,7 +276,7 @@ int32_t usb_bulk_msg(usb_device_t *usb_dev,
     transaction_t *trans;
 
     /* get endpoint info */
-    endpoint = pipe & 15;
+    endpt = pipe & 15;
     if (pipe & 0x80) {
         /* in */
         direction = 1;
@@ -232,27 +284,30 @@ int32_t usb_bulk_msg(usb_device_t *usb_dev,
         /* out */
         direction = 0;
     }
-    packet_size = usb_dev->endpt_desc[endpoint]->wMaxPacketSize;
+    packet_size = usb_dev->endpt_desc[endpt]->wMaxPacketSize;
 
     /* calculate no of packets and allocate them */
     no_of_data_packets = len/packet_size + (len%packet_size?1:0);
     trans = kmalloc(sizeof(transaction_t)*no_of_data_packets);
     for (i = 0; i < no_of_data_packets; i++) {
-        trans[i].tokpid   = direction ? PID_IN : PID_OUT;
-        trans[i].addr     = usb_dev->addr;
-        trans[i].endpoint = endpoint;
-        trans[i].datapid  = usb_dev->endpt_toggle[i] ? PID_DATA1 : PID_DATA0;
-        trans[i].databuf  = &((char *)data)[i*packet_size];
+        trans[i].tokpid    = direction ? PID_IN : PID_OUT;
+        trans[i].addr      = usb_dev->addr;
+        trans[i].endpoint  = endpt;
+        trans[i].datapid   = usb_dev->endpt_toggle[endpt]?PID_DATA1:PID_DATA0;
+        trans[i].databuf   = &((char *)data)[i*packet_size];
         if (len < packet_size) {
-            trans[i].pktsize  = len;
+            trans[i].pktsize   = len;
             len = 0;
         } else {
-            trans[i].pktsize  = packet_size;
+            trans[i].pktsize   = packet_size;
             len -= packet_size;
         }
-        trans[i].lowspeed = usb_dev->lowspeed;
-        trans[i].calc     = 1;
-        usb_dev->endpt_toggle[i] = !usb_dev->endpt_toggle[i];
+        trans[i].lowspeed  = usb_dev->lowspeed;
+        trans[i].highspeed = usb_dev->highspeed;
+        trans[i].maxpacket = packet_size;
+        trans[i].usbdev    = usb_dev;
+        trans[i].calc      = 1;
+        usb_dev->endpt_toggle[endpt] = !usb_dev->endpt_toggle[endpt];
     }
 
     /* now let the HCI handle the transfer */
@@ -275,12 +330,15 @@ int32_t usb_bulk_msg(usb_device_t *usb_dev,
 /*                             Enumeration                           */
 /* ================================================================= */
 
-int32_t usb_enum_bus(usb_interface_t *hubif, int32_t port, int32_t lowspeed) {
+int32_t usb_enum_bus(usb_interface_t *hubif, int32_t port) {
     /* enumerate usb bus after hub change event (9.1.2) */
-    char *buf = kmalloc(80);
+    char *buf = kmalloc(0x100);
     usb_device_t *usbdev = kmalloc(sizeof(usb_device_t));
     usb_device_t *hub = hubif->usbdev;
     int32_t retval, i, addr;
+    wPortStatus_t *status = (wPortStatus_t *) &buf[0];
+    wPortChange_t *change = (wPortChange_t *) &buf[2];
+
 
     /* wait for at least 100ms to allow completion of an insertion
      * process and for power at the device to become stable
@@ -289,21 +347,45 @@ int32_t usb_enum_bus(usb_interface_t *hubif, int32_t port, int32_t lowspeed) {
 
     /* issue reset command to port (reset enables the port, too) */
     usb_control_msg(hub,0,SET_FEATURE,0x23,PORT_RESET,port,NULL,0,2000);
-    sleep(10);
+    sleep(20);
+
+    /* get status again */
+    usb_control_msg(hub,
+                    0,
+                    GET_STATUS,        /* request */
+                    0xA3,              /* request type */
+                    0,                 /* value */
+                    port,              /* port index */
+                    buf,
+                    4,
+                    2000);
+    if (!status->port_connection) {
+        /* disconnected during reset; clear c_port_connection. */
+        usb_control_msg(hub,
+                        0,
+                        CLEAR_FEATURE,     /* request */
+                        0x23,              /* request type */
+                        C_PORT_CONNECTION, /* value */
+                        port,              /* port index */
+                        NULL,
+                        0,
+                        2000);
+        return 0;
+    }
 
     /* the usb device is now in the default state and can draw
      * no more than 100mA.
      */
     usbdev->hci  = hub->hci;     /* the hci to which the hub is attached */
     usbdev->addr = 0;            /* default address */
-    usbdev->lowspeed = lowspeed; /* device is lowspeed? */
-    usbdev->maxpacket0 = 8;      /* max packet size for endpoint 0 */
-    usbdev->str_manufact = kmalloc(3);
-    usbdev->str_product  = kmalloc(3);
-    usbdev->str_serial   = kmalloc(3);
-    strcpy(usbdev->str_manufact, "<>");
-    strcpy(usbdev->str_product,  "<>");
-    strcpy(usbdev->str_serial,   "<>");
+    usbdev->hubdev = hubif->usbdev; /* hub device structure */
+    usbdev->port = port; /* store hub port */
+    usbdev->lowspeed = status->port_low_speed; /* device is lowspeed? */
+    usbdev->highspeed = status->port_high_speed; /* device is highspeed? */
+    usbdev->maxpacket0 = 0x40;   /* max packet size for endpoint 0 */
+    usbdev->str_manufact = NULL;
+    usbdev->str_product  = NULL;
+    usbdev->str_serial   = NULL;
 
     /* get maximum packet size */
     retval = usb_control_msg(usbdev, 0, GET_DESCRIPTOR, 0x80,
@@ -322,7 +404,7 @@ int32_t usb_enum_bus(usb_interface_t *hubif, int32_t port, int32_t lowspeed) {
                              8, 2000);
 
     /* allocate config descriptor */
-    retval = (((unsigned)buf[3])<<8)|((unsigned)buf[2]);
+    retval = (((uint8_t)buf[3])<<8)|((uint8_t)buf[2]);
     usbdev->conf_desc = kmalloc(retval);
 
     /* get the whole config descriptor */
@@ -332,9 +414,14 @@ int32_t usb_enum_bus(usb_interface_t *hubif, int32_t port, int32_t lowspeed) {
 
     /* get manufacturer string */
     if (retval = usbdev->dev_desc->iManufacturer) {
+        /* get length */
+        usb_control_msg(usbdev, 0, GET_DESCRIPTOR, 0x80,
+                                (STRING_DESCRIPTOR<<8) | retval, 0, buf,
+                                2, 2000);
+        /* get full string */
         retval = usb_control_msg(usbdev, 0, GET_DESCRIPTOR, 0x80,
                                 (STRING_DESCRIPTOR<<8) | retval, 0, buf,
-                                0x100, 2000);
+                                buf[0], 2000);
         if (retval > 0) {
             retval = (buf[0]-2)/2;
             usbdev->str_manufact = kmalloc(retval+1);
@@ -342,13 +429,21 @@ int32_t usb_enum_bus(usb_interface_t *hubif, int32_t port, int32_t lowspeed) {
                 usbdev->str_manufact[i] = buf[i*2+2];
             usbdev->str_manufact[i] = 0;
         }
+    } else {
+        usbdev->str_manufact = kmalloc(3);
+        strcpy(usbdev->str_manufact, "<>");
     }
 
     /* get product string */
     if (retval = usbdev->dev_desc->iProduct) {
+        /* get length */
+        usb_control_msg(usbdev, 0, GET_DESCRIPTOR, 0x80,
+                                (STRING_DESCRIPTOR<<8) | retval, 0, buf,
+                                2, 2000);
+        /* get full string */
         retval = usb_control_msg(usbdev, 0, GET_DESCRIPTOR, 0x80,
                                 (STRING_DESCRIPTOR<<8) | retval, 0, buf,
-                                0x100, 2000);
+                                buf[0], 2000);
         if (retval > 0) {
             retval = (buf[0]-2)/2;
             usbdev->str_product = kmalloc(retval+1);
@@ -356,13 +451,22 @@ int32_t usb_enum_bus(usb_interface_t *hubif, int32_t port, int32_t lowspeed) {
                 usbdev->str_product[i] = buf[i*2+2];
             usbdev->str_product[i] = 0;
         }
+    } else {
+        usbdev->str_product = kmalloc(100);
+        strcpy(usbdev->str_product,
+               usb_base_to_name(usbdev->dev_desc->bDeviceClass));
     }
 
     /* get serial string */
     if (retval = usbdev->dev_desc->iSerialNumber) {
+        /* get length */
+        usb_control_msg(usbdev, 0, GET_DESCRIPTOR, 0x80,
+                                (STRING_DESCRIPTOR<<8) | retval, 0, buf,
+                                2, 2000);
+        /* get full string */
         retval = usb_control_msg(usbdev, 0, GET_DESCRIPTOR, 0x80,
                                 (STRING_DESCRIPTOR<<8) | retval, 0, buf,
-                                0x100, 2000);
+                                buf[0], 2000);
         if (retval > 0) {
             retval = (buf[0]-2)/2;
             usbdev->str_serial = kmalloc(retval+1);
@@ -370,12 +474,17 @@ int32_t usb_enum_bus(usb_interface_t *hubif, int32_t port, int32_t lowspeed) {
                 usbdev->str_serial[i] = buf[i*2+2];
             usbdev->str_serial[i] = 0;
         }
+    } else {
+        usbdev->str_serial = kmalloc(3);
+        strcpy(usbdev->str_serial, "<>");
     }
 
     /* print string descriptors */
-    printk("Manufacturer: %a%s%a\n", 0x0E, usbdev->str_manufact, 0x0F);
-    printk("Product:      %a%s%a\n", 0x0E, usbdev->str_product,  0x0F);
-    printk("Serial:       %a%s%a\n", 0x0E, usbdev->str_serial,   0x0F);
+    printk("+ ");
+    /*printk("%a%s%a: ", 0x0E, usbdev->str_manufact, 0x0F);*/
+    printk("%a%s%a", 0x0E, usbdev->str_product,  0x0F);
+    /*printk(" (%a%s%a)\n", 0x0E, usbdev->str_serial,   0x0F);*/
+    printk("\n");
 
     /* allocate address for the device */
     addr = usb_alloc_addr(usbdev->hci);

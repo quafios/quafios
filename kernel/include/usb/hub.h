@@ -72,7 +72,10 @@ typedef struct wPortStatus {
     unsigned reserved1           : 3;
     unsigned port_power          : 1;
     unsigned port_low_speed      : 1;
-    unsigned reserved2           : 6;
+    unsigned port_high_speed     : 1;
+    unsigned port_test_mode      : 1;
+    unsigned port_indicator_ctrl : 1;
+    unsigned reserved2           : 3;
 } __attribute__((packed)) wPortStatus_t;
 
 /* port change field */

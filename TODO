@@ -1,7 +1,7 @@
 TODO list for next release:
 ----------------------------
 
-- Implement EHCI
+- Implement OHCI
 
 --------------------------------------------------------------------------------
 
@@ -16,7 +16,6 @@ The release after next:
 - AHCI
 
 - USB plug and play
-- OHCI
 - xHCI
 
 - ext2

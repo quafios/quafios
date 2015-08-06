@@ -66,8 +66,7 @@ driver_t uhci_driver = {
     /* irq:       */ uhci_irq
 };
 
-#define TO_PHYS(addr) (arch_vmpage_getAddr(NULL,(uint32_t)addr)\
-                       +(((uint32_t)addr)&0xFFF))
+#define TO_PHYS(addr)  to_phys((uint32_t)addr)
 
 /* frame list pointer */
 typedef struct flptr {
@@ -307,7 +306,8 @@ int32_t uhci_root_hub_ctrl_msg(info_t *info, usb_cmd_t *cmd) {
         return 0;
     } else if (cmd->requesttype == 0x23 && cmd->request == CLEAR_FEATURE) {
         /* ClearPortFeature request */
-        uint16_t portsc = uhci_read_portsc(info, cmd->index);
+        uint32_t portindex = cmd->index - 1;
+        uint16_t portsc = uhci_read_portsc(info, portindex);
         if (cmd->value == PORT_ENABLE) {
             portsc &= ~PED & 0xFFF5;
         } else if (cmd->value == PORT_SUSPEND) {
@@ -317,7 +317,7 @@ int32_t uhci_root_hub_ctrl_msg(info_t *info, usb_cmd_t *cmd) {
         } else if (cmd->value == C_PORT_ENABLE) {
             portsc = (portsc & 0xFFF5) | PEDC;
         }
-        uhci_write_portsc(info, cmd->index, portsc);
+        uhci_write_portsc(info, portindex, portsc);
         return 0;
     } else if (cmd->requesttype == 0xA3 && cmd->request == GET_STATE) {
         /* GetBusState request */
@@ -339,7 +339,8 @@ int32_t uhci_root_hub_ctrl_msg(info_t *info, usb_cmd_t *cmd) {
         return 0;
     } else if (cmd->requesttype == 0xA3 && cmd->request == GET_STATUS) {
         /* GetPortStatus request */
-        uint16_t portsc = uhci_read_portsc(info, cmd->index);
+        uint32_t portindex = cmd->index - 1;
+        uint16_t portsc = uhci_read_portsc(info, portindex);
         wPortStatus_t *status = (wPortStatus_t *) &((char *)cmd->data)[0];
         wPortChange_t *change = (wPortChange_t *) &((char *)cmd->data)[2];
         status->port_connection = portsc & CCS ? 1 : 0;
@@ -350,6 +351,9 @@ int32_t uhci_root_hub_ctrl_msg(info_t *info, usb_cmd_t *cmd) {
         status->reserved1 = 0;
         status->port_power = 1;
         status->port_low_speed = portsc & LSDA ? 1 : 0;
+        status->port_high_speed = 0;
+        status->port_test_mode = 0;
+        status->port_indicator_ctrl = 0;
         status->reserved2 = 0;
         change->c_port_connection = portsc & CSC ? 1 : 0;
         change->c_port_enable = portsc & PEDC ? 1 : 0;
@@ -366,16 +370,23 @@ int32_t uhci_root_hub_ctrl_msg(info_t *info, usb_cmd_t *cmd) {
         return 0;
     } else if (cmd->requesttype == 0x23 && cmd->request == SET_FEATURE) {
         /* SetPortFeature request */
-        uint16_t portsc = uhci_read_portsc(info, cmd->index);
+        uint32_t portindex = cmd->index - 1;
+        uint16_t portsc = uhci_read_portsc(info, portindex);
         if (cmd->value == PORT_RESET) {
-            portsc = (portsc & 0xFFF5) | PED | PR;
+            portsc = (portsc & 0xFFF5) | PR;
         } else if (cmd->value == PORT_SUSPEND) {
             portsc = (portsc & 0xFFF5) | SUSPEND;
+        } else if (cmd->value == PORT_POWER) {
+            portsc = (portsc & 0xFFF5);
         }
-        uhci_write_portsc(info, cmd->index, portsc);
+        uhci_write_portsc(info, portindex, portsc);
         if (cmd->value == PORT_RESET) {
             sleep(10);
-            uhci_write_portsc(info, cmd->index, portsc & 0xFFF5 & ~PR);
+            uhci_write_portsc(info, portindex, portsc & 0xFFF5 & ~PR);
+            while ((portsc = uhci_read_portsc(info, portindex)) & PR);
+            sleep(10);
+            uhci_write_portsc(info, portindex, (portsc & 0xFFF5) | PED);
+            while (!(uhci_read_portsc(info, portindex) & PED));
         }
         return 0;
     } else {
@@ -502,10 +513,17 @@ uint32_t uhci_probe(device_t *dev, void *config) {
 
     resource_t *list = dev->resources.list;
     pci_config_t *pci_config = (pci_config_t *) config;
-    int i;
+    int32_t i;
+    info_t *info;
+
+    /* give priority for EHCI companion controller (if exists) */
+    if (!ehci_set_companion(dev, config)) {
+        /* postpone initialization until EHCI is initialized */
+        return ESUCCESS;
+    }
 
     /* create info_t structure: */
-    info_t *info = (info_t *) kmalloc(sizeof(info_t));
+    info = (info_t *) kmalloc(sizeof(info_t));
     dev->drvreg = (uint32_t) info;
     if (info == NULL)
         return ENOMEM; /* i am sorry :D */
@@ -513,9 +531,6 @@ uint32_t uhci_probe(device_t *dev, void *config) {
     /* inform user of our progress */
     printk("%aUSB%a: ", 0x0A, 0x0F);
     printk("Universal host controller interface (UHCI) on PCI.\n");
-
-    /* disable USB legacy support and initialize companion EHCI controllers */
-    ehci_init_companion(pci_config->bus, pci_config->devno, pci_config->func);
 
     /* store data in info structure */
     info->dev = dev;

@@ -110,6 +110,9 @@ typedef struct {
     uint16_t bString[30];
 } string_desc_t;
 
+/* features */
+#define ENDPOINT_HALT   0
+
 /* usb hierarchy */
 typedef struct usb_hci {
     struct usb_hci *next;
@@ -119,18 +122,21 @@ typedef struct usb_hci {
 } usb_hci_t;
 
 typedef struct usb_device {
-    usb_hci_t        *hci;
-    int32_t           addr;
-    int32_t           lowspeed;
-    int32_t           maxpacket0;
-    device_desc_t    *dev_desc;
-    conf_desc_t      *conf_desc;
-    interface_desc_t *if_desc[32];
-    endpoint_desc_t  *endpt_desc[16];
-    int32_t           endpt_toggle[16];
-    char             *str_manufact;
-    char             *str_product;
-    char             *str_serial;
+    usb_hci_t         *hci;
+    int32_t            addr;
+    struct usb_device *hubdev;
+    int32_t            port;
+    int32_t            lowspeed;
+    int32_t            highspeed;
+    int32_t            maxpacket0;
+    device_desc_t     *dev_desc;
+    conf_desc_t       *conf_desc;
+    interface_desc_t  *if_desc[32];
+    endpoint_desc_t   *endpt_desc[16];
+    int32_t            endpt_toggle[16];
+    char              *str_manufact;
+    char              *str_product;
+    char              *str_serial;
 } usb_device_t;
 
 typedef struct usb_interface {
@@ -145,16 +151,19 @@ typedef struct transaction {
 #define PID_SETUP       0x2D
 #define PID_IN          0x69
 #define PID_OUT         0xE1
-    int tokpid;
-    int addr;
-    int endpoint;
+    int32_t tokpid;
+    int32_t addr;
+    int32_t endpoint;
 #define PID_DATA0       0xC3
 #define PID_DATA1       0x4B
-    int datapid;
+    int32_t datapid;
     char *databuf;
-    int pktsize;
-    int lowspeed;
-    int calc;
+    int32_t pktsize;
+    int32_t lowspeed;
+    int32_t highspeed;
+    uint32_t maxpacket;
+    usb_device_t *usbdev;
+    int32_t calc;
 } transaction_t;
 
 #define USB_CMD_HUBCTRL         0
@@ -191,6 +200,6 @@ int32_t usb_bulk_msg(usb_device_t *usb_dev,
                      int32_t       len,
                      int32_t      *actual_length,
                      int32_t       timeout);
-int32_t usb_enum_bus(usb_interface_t *hubif, int32_t port, int32_t lowspeed);
+int32_t usb_enum_bus(usb_interface_t *hubif, int32_t port);
 
 #endif

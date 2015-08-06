@@ -178,7 +178,7 @@ static void reset_keyboard(device_t *dev) {
 
 
 static void update_leds(info_t *info) {
-    uint8_t buff[2];
+    uint8_t buff[2], ret[2];
     atkbc_sendrec_t data;
     buff[0] = 0xED; /* SET LED Status */
     buff[1] = (info->caps_lock   * 4) +
@@ -187,8 +187,8 @@ static void update_leds(info_t *info) {
     data.channel = 0;    /* first PS/2 port */
     data.send    = 2;    /* send 2 bytes    */
     data.sbuff   = buff; /* the buffer      */
-    data.receive = 0;    /* Receive nothing */
-    data.rbuff   = NULL;
+    data.receive = 2;    /* rbuff size      */
+    data.rbuff   = ret;  /* rbuff           */
     dev_ioctl(info->dev->parent_bus->ctl, i8042_ATKBC_SENDREC, &data);
 }
 
@@ -463,15 +463,15 @@ uint32_t ps2kbd_probe(device_t *dev, void *config) {
     /* reset the keyboard: */
     reset_keyboard(dev);
 
+    /* update leds: */
+    update_leds(info);
+
     /* catch the IRQs: */
     reserve = kmalloc(sizeof(irq_reserve_t));
     reserve->dev     = dev;
     reserve->expires = 0;
     reserve->data    = NULL;
     irq_reserve(dev->resources.list[0].data.irq.number, reserve);
-
-    /* update leds: */
-    update_leds(info);
 
     /* add to devfs */
     devfs_reg("keyboard", dev->devid);

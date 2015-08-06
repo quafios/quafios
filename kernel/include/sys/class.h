@@ -237,10 +237,10 @@
 
 #define BASE_USB_HUB                    0x09
 #define  SUB_USB_HUB                    0x00
-#define   IF_USB_HUB_ROOTHUB            0x00
 #define   IF_USB_HUB_FULLSPEED          0x00
 #define   IF_USB_HUB_HISPEED_SINGLE_TT  0x01
 #define   IF_USB_HUB_HISPEED_MULTI_TT   0x02
+#define   IF_USB_HUB_ROOTHUB            0xFF
 
 /* ============================================================== */
 /*                        DISK Bus Codes                          */

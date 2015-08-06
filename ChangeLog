@@ -7,6 +7,7 @@ Quafios 2.0.1:
     - Implemented a generic ATA and SCSI disk drivers.
     - Implemented a basic USB subsystem.
     - Implemented UHCI driver.
+    - Implemented EHCI driver.
     - Implemented USB mass storage device driver.
     - Implemented a basic USB hub driver.
     - Implemented semaphores and spinlocks.

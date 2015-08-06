@@ -53,3 +53,6 @@ qemu-iso: isolive
 
 qemu-disk: diskimg
 	srcdir=$(top_srcdir) $(top_srcdir)/scripts/qemu.sh c
+
+xen-iso: isolive
+	srcdir=$(top_srcdir) $(top_srcdir)/scripts/xen.sh

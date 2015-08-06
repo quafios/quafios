@@ -36,6 +36,7 @@
 #include <sys/device.h>
 #include <sys/bootinfo.h>
 #include <sys/scheduler.h>
+#include <sys/semaphore.h>
 #include <storage/disk.h>
 #include <scsi/scsi.h>
 
@@ -64,13 +65,14 @@ driver_t scsidisk_driver = {
 };
 
 typedef struct {
-    device_t *dev;
-    device_t *ctrlr;
-    int32_t   lun;
-    uint32_t  cache_lock;
-    uint64_t  cache_sect;
-    char      cache_data[512];
-    disk_t   *disk;
+    device_t    *dev;
+    device_t    *ctrlr;
+    int32_t      lun;
+    uint32_t     cache_lock;
+    uint64_t     cache_sect;
+    char         cache_data[512];
+    semaphore_t  sema;
+    disk_t      *disk;
 } info_t;
 
 /* ================================================================= */
@@ -153,6 +155,7 @@ uint32_t scsidisk_probe(device_t *dev, void *config) {
     info->lun        = scsi_config->lun;
     info->cache_lock = 0;
     info->cache_sect = -1;
+    sema_init(&info->sema, 1);
 
     /* register disk */
     info->disk = kmalloc(sizeof(disk_t));
@@ -169,18 +172,23 @@ uint32_t scsidisk_read(device_t *dev, uint64_t off, uint32_t size, char *buff){
     info_t *info = (info_t *) dev->drvreg;
     uint32_t max_seccount = 0x10000;
 
+    sema_down(&info->sema);
     /* head */
     if (off % 512) {
         /* offset is not sector aligned */
         uint32_t rem = (off+512)/512 - off;
         if (size <= rem) {
-            if (read_sector_part(info, off/512, off%512, size, buff))
+            if (read_sector_part(info, off/512, off%512, size, buff)) {
+                sema_up(&info->sema);
                 return EIO;
+            }
             buff += size;
             size = 0;
         } else {
-            if (read_sector_part(info, off/512, off%512, rem, buff))
+            if (read_sector_part(info, off/512, off%512, rem, buff)) {
+                sema_up(&info->sema);
                 return EIO;
+            }
             buff += rem;
             size -= rem;
         }
@@ -191,13 +199,17 @@ uint32_t scsidisk_read(device_t *dev, uint64_t off, uint32_t size, char *buff){
         /* read all remaining sectors */
         uint32_t sects = size/512;
         if (sects >= max_seccount) {
-            if (read_sectors(info, max_seccount, off/512, buff))
+            if (read_sectors(info, max_seccount, off/512, buff)) {
+                sema_up(&info->sema);
                 return EIO;
+            }
             size -= max_seccount*512;
             buff += max_seccount*512;
         } else {
-            if (read_sectors(info, sects, off/512, buff))
+            if (read_sectors(info, sects, off/512, buff)) {
+                sema_up(&info->sema);
                 return EIO;
+            }
             size -= sects*512;
             buff += sects*512;
         }
@@ -205,16 +217,65 @@ uint32_t scsidisk_read(device_t *dev, uint64_t off, uint32_t size, char *buff){
 
     /* tail*/
     if (size) {
-        if (read_sector_part(info, off/512, 0, size, buff))
+        if (read_sector_part(info, off/512, 0, size, buff)) {
+            sema_up(&info->sema);
             return EIO;
+        }
     }
 
     /* done */
+    sema_up(&info->sema);
     return ESUCCESS;
 }
 
 uint32_t scsidisk_write(device_t *dev, uint64_t off, uint32_t size,char *buff){
-    return ESUCCESS;
+
+    uint8_t cdb[16];
+    scsi_cmd_t scsi_cmd;
+    int32_t retval, i;
+    uint64_t lba;
+    uint32_t seccount;
+    info_t *info = (info_t *) dev->drvreg;
+
+    /* make sure data is aligned */
+    if (off%512 || size%512) {
+        printk("scsidisk_write() for unaligned data is not implemented!\n");
+        return EIO;
+    }
+
+    /* enter region */
+    sema_down(&info->sema);
+
+    /* calculate parameters */
+    lba = off/512;
+    seccount = size/512;
+
+    /* construct CDB */
+    cdb[ 0] = 0x2A; /* WRITE (10) */
+    cdb[ 1] = 0x00;
+    cdb[ 2] = (lba>>24)&0xFF;
+    cdb[ 3] = (lba>>16)&0xFF;
+    cdb[ 4] = (lba>> 8)&0xFF;
+    cdb[ 5] = (lba>> 0)&0xFF;
+    cdb[ 6] = 0x00;
+    cdb[ 7] = (seccount>> 8)&0xFF;
+    cdb[ 8] = (seccount>> 0)&0xFF;
+    cdb[ 9] = 0x00;
+
+    /* send command to SCSI controller */
+    scsi_cmd.lun = info->lun;
+    scsi_cmd.cdb = cdb;
+    scsi_cmd.cdb_len = 10;
+    scsi_cmd.data = buff;
+    scsi_cmd.data_len = seccount*512;
+    scsi_cmd.is_write = 1;
+    retval = dev_ioctl(info->ctrlr, 0, &scsi_cmd);
+
+    /* leave region */
+    sema_up(&info->sema);
+
+    /* done */
+    return retval;
 }
 
 uint32_t scsidisk_ioctl(device_t *dev, uint32_t cmd, void *data) {

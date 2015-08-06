@@ -839,6 +839,9 @@ qemu-iso: isolive
 qemu-disk: diskimg
 	srcdir=$(top_srcdir) $(top_srcdir)/scripts/qemu.sh c
 
+xen-iso: isolive
+	srcdir=$(top_srcdir) $(top_srcdir)/scripts/xen.sh
+
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:
