@@ -777,7 +777,7 @@ uint32_t ehci_probe(device_t *dev, void *config) {
 
     /* inform user of our progress */
     printk("%aUSB%a: ", 0x0A, 0x0F);
-    printk("Universal host controller interface (EHCI) on PCI.\n");
+    printk("Enhanced host controller interface (EHCI) on PCI.\n");
 
     /* get BARs and irqnum */
 #if 0

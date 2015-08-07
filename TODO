@@ -1,14 +1,7 @@
-TODO list for next release:
-----------------------------
+Suggested TODO list:
+---------------------
 
-- Implement OHCI
-
---------------------------------------------------------------------------------
-
-The release after next:
-------------------------
-
-- LAN
+- TCP/IP
 - Audio
 
 - ATAPI
@@ -16,6 +9,7 @@ The release after next:
 - AHCI
 
 - USB plug and play
+- OHCI
 - xHCI
 
 - ext2
@@ -27,4 +21,6 @@ The release after next:
 
 - signals and pipes
 - ajust concurrency very properly in various kernel parts
-- Make kernel design modular (everything is a module).
+- Make kernel design modular (everything is a module, modprobe, etc...).
+
+- QCC

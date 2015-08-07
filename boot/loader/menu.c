@@ -60,6 +60,8 @@ int32_t selected_option = 0;
 
 uint8_t border_attr = 0x0C;
 
+extern uint8_t *drivenum;
+
 extern uint8_t enable_graphics;
 
 int32_t strlen(char *str) {
@@ -151,6 +153,7 @@ void print_menu_option(int32_t line, char *str, int32_t selected) {
 
 void show_menu() {
     int32_t i;
+    uint8_t dl;
     cls();
     hide_cursor();
     print_header(1);
@@ -202,15 +205,20 @@ void show_menu() {
                         return;
                     case 2:
                         cls();
-                        __asm__("mov  $0x02, %ah;"
-                                "mov  $0x01, %al;"
-                                "mov  $0x00, %ch;"
-                                "mov  $0x00, %dh;"
-                                "mov  $0x01, %cl;"
-                                "mov  $0x80, %dl;"
-                                "mov  $0x7C00, %bx;"
+                        if (*drivenum == 0x80)
+                            dl = 0x81;
+                        else
+                            dl = 0x80;
+                        __asm__("push %%dx;"
+                                "mov  $0x02, %%ah;"
+                                "mov  $0x01, %%al;"
+                                "mov  $0x00, %%ch;"
+                                "mov  $0x00, %%dh;"
+                                "mov  $0x01, %%cl;"
+                                "mov  $0x7C00, %%bx;"
                                 "int  $0x13;"
-                                "jmp  $0x0000, $0x7C00");
+                                "pop  %%dx;"
+                                "jmp  $0x0000, $0x7C00"::"d"(dl));
                         return;
                     case 3:
                         cls();
