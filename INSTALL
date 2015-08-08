@@ -57,6 +57,17 @@
 
    Then follow the instructions of the interactive installation script.
 
+- Emulation:
+=============
+
+1. Create the live CD-ROM image (after you have compiled Quafios):
+
+   $ make isolive
+
+2. Now you can use the generated "quafios-2.0.1.iso" file as a CD-ROM
+   image for your preferred hypervisor/emulator. Quafios should run well
+   on Xen, QEMU, and VirtualBox.
+
 - Cleaning up build files:
 ===========================
 
