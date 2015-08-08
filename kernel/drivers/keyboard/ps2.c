@@ -458,13 +458,16 @@ uint32_t ps2kbd_probe(device_t *dev, void *config) {
     printk("PS/2 Keyboard driver is initializing...\n");
 
     /* flush buffer */
-    read_scancode(info);
+    while (read_scancode(info) != 0xFF);
 
     /* reset the keyboard: */
     reset_keyboard(dev);
 
     /* update leds: */
     update_leds(info);
+
+    /* some little delay */
+    sleep(20);
 
     /* catch the IRQs: */
     reserve = kmalloc(sizeof(irq_reserve_t));
