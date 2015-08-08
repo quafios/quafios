@@ -2,7 +2,7 @@
 
 set -e
 rm -rf /tmp/quafios-2.0.1 /tmp/quafios-2.0.1.tar.gz
-cp -rp /home/iocoder/Projects/Quafios /tmp/quafios-2.0.1
+cp -rp /home/iocoder/Projects/quafios /tmp/quafios-2.0.1
 cd /tmp/quafios-2.0.1
 rm -rf build
 if [ -a Makefile ]; then
