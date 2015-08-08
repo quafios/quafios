@@ -11,9 +11,9 @@
 - Compiling Quafios:
 =====================
 
-1. The "configure" script shall configure quafios and create Makefiles.
-   The configure script can be found in the top directory that contains
-   Quafios source code files. Execute this command using your shell:
+1. The configuration script shall configure Quafios and create Makefiles.
+   The script can be found in the top directory that contains
+   Quafios source code files. Execute this command from your shell:
 
    $ ./configure
 
@@ -46,14 +46,14 @@
 ===============================================
 
 1. The disk should have MBR partition table and a free primary partition
-   for Quafios. There is a lot of free software that is dedicated for
+   for Quafios. There exists a lot of free software that is dedicated for
    disk partitioning, like util-linux package (which contains fdisk command)
    and gparted utility.
 
 2. Once you are ready, type this command in your shell prompt (after
    you have compiled Quafios):
 
-   $ make setup
+   $ sudo make setup
 
    Then follow the instructions of the interactive installation script.
 
