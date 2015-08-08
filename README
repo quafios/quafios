@@ -1,18 +1,18 @@
 What is Quafios?
 =================
-Quafios is a hobby operating system for personal computers written
-in C. It is a fully integrated operating system with its own kernel.
-It is an educational operating system intending to help programmers
+Quafios is a hobby operating system for personal computers. It is a fully
+integrated operating system with its own kernel. The main purpose of the
+project is to build an educational operating system to help programmers
 who want to learn about operating system design and implementation.
 
 Quafios helps programmers throughout the project documentation which
 describes every bit in Quafios source code so that PC programmers not only
 can understand how things go but also learn how they can implement basic
-operating system designs by themselves. It also explains the most topics
+operating system designs by themselves. It also explains many topics
 related to operating system development.
 
 You can get source code and documents from the project's official
-web-site, more information can be found in "Contact Us" section in this
+web-site. More information can be found in "Contact Us" section in this
 file.
 
 License:
