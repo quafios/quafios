@@ -30,7 +30,7 @@ LIBGUI_INCLUDE = $(shell find $(TSD)/gui/include    -name "*.h" 2>/dev/null)
 LIBC_LIB       = $(shell find $(TBD)/qlibc/lib      -name "*.a" 2>/dev/null)
 LIBGUI_LIB     = $(shell find $(TBD)/gui/lib        -name "*.a" 2>/dev/null)
 
-CFLAGS = -fno-stack-protector -fno-exceptions -fno-zero-initialized-in-bss \
+CFLAGS = -fno-pie -fno-stack-protector -fno-exceptions -fno-zero-initialized-in-bss \
          -ffunction-sections -fno-builtin -Wno-pointer-to-int-cast -Werror \
 	 -nostdinc -m32 -march=i686 -mtune=generic -pedantic \
 	 -Wno-implicit-function-declaration -std=c89 \
@@ -41,7 +41,7 @@ CFLAGS = -fno-stack-protector -fno-exceptions -fno-zero-initialized-in-bss \
 	 -I$(TSD)/qlibc/include \
 	 -I$(TSD)/gui/include
 
-LFLAGS = -nostartfiles -nostdlib -nodefaultlibs \
+LFLAGS = -static -nostartfiles -nostdlib -nodefaultlibs \
          -m32 -march=i686 -mtune=generic -pedantic \
 	 -L$(TBD)/qlibc/lib \
 	 -L$(TBD)/gui/lib
