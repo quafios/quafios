@@ -1,6 +1,20 @@
 #! /bin/sh
 
-aclocal \
-&& automake --add-missing -c \
-&& autom4te -v --language=M4sh --no-cache  --output=configure autoconf/autoconf.m4 aclocal.m4 configure.ac \
-&& rm -fr autom4te.cache
+# halt on error
+set -e
+
+# print commands
+set -x
+
+# configure.ac --> aclocal.m4
+aclocal
+
+# configure.ac --> config.h.in
+autoheader
+
+# configure.ac + aclocal.m4 --> configure
+autoconf
+
+# config.h + Makefile.am --> Makefile.in
+automake -a --foreign
+

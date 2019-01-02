@@ -25,4 +25,4 @@ else
 fi;
 SND="-soundhw pcspk"
 
-qemu -enable-kvm $CDROM $USB -boot $1 -m 128
+qemu-system-x86_64 --enable-kvm $CDROM $USB -boot $1 -m 128

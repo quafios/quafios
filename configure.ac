@@ -7,6 +7,9 @@ VERSION=2.0.1
 AC_PROG_CXX
 
 AM_INIT_AUTOMAKE
+
+AC_CONFIG_HEADERS([config.h])
+
 AC_CONFIG_FILES(Makefile
                 kernel/Makefile
                 boot/Makefile
@@ -27,4 +30,5 @@ AC_CONFIG_FILES(Makefile
                 launcher/Makefile
                 pascal/Makefile
                 tools/Makefile)
+
 AC_OUTPUT
